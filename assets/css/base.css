@@ -1,0 +1,78 @@
+/* ========== 设计变量（浅色模式） ========== */
+:root {
+  /* 配色 — 浅色模式，对齐 designfly 调性但改浅 */
+  --color-bg: #f4f4f2;              /* 主背景：暖白 */
+  --color-bg-soft: #ecece9;         /* 次背景 */
+  --color-bg-card: #ffffff;         /* 卡片底 */
+  --color-border: rgba(0, 0, 0, 0.08);
+  --color-border-strong: rgba(0, 0, 0, 0.14);
+  --color-text: #0a0a0a;            /* 主文字：近黑 */
+  --color-text-soft: rgba(0, 0, 0, 0.65);
+  --color-text-mute: rgba(0, 0, 0, 0.4);
+  --color-accent: #5b8c00;          /* 浅色下 lime 调深，保证对比度 */
+  --color-accent-bright: #84cc16;   /* 高亮态 */
+  --color-accent-soft: rgba(91, 140, 0, 0.1);
+
+  /* 玻璃拟态（浅色：半透明黑） */
+  --glass-blur: 150px;
+  --glass-bg: rgba(255, 255, 255, 0.6);
+
+  /* 字体 */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "Courier Prime", "Courier New", monospace;
+  --font-script: "La Belle Aurore", cursive;
+  --font-type: "Special Elite", "Courier New", monospace;
+
+  /* 节奏 */
+  --radius: 14px;
+  --radius-lg: 22px;
+  --maxw: 1280px;
+  --gutter: clamp(20px, 5vw, 80px);
+  --ease: cubic-bezier(0.625, 0.05, 0, 1);
+}
+
+/* ========== Reset ========== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-weight: 400;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+img, svg { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+ul { list-style: none; }
+
+/* ========== 排版基础 ========== */
+h1, h2, h3 { line-height: 1.05; font-weight: 500; letter-spacing: -0.02em; }
+
+/* ========== 布局工具 ========== */
+.container {
+  width: 100%;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+}
+
+.section { padding-block: clamp(80px, 12vw, 160px); }
+
+/* 滚动揭示初始态（GSAP 接管后可见） */
+.reveal { opacity: 0; }
+.reveal-y { opacity: 0; transform: translateY(40px); }
+
+/* 无障碍：尊重减少动效 */
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+  .reveal, .reveal-y { opacity: 1; transform: none; }
+}

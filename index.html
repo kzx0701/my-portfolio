@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>作品集 — 个人主页</title>
+    <meta name="description" content="个人作品集 — 设计与前端开发" />
+
+    <!-- 字体（对齐 designfly 字体组合） -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Courier+Prime:wght@400;700&family=La+Belle+Aurore&family=Special+Elite&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- 样式 -->
+    <link rel="stylesheet" href="assets/css/base.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+    <link rel="stylesheet" href="assets/css/sections/hero.css" />
+    <link rel="stylesheet" href="assets/css/sections/works.css" />
+
+    <!-- GSAP + 插件（与 designfly 同源 jsdelivr，轮播需要 Draggable + InertiaPlugin） -->
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/Draggable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/InertiaPlugin.min.js"></script>
+  </head>
+  <body>
+    <!-- ========== 导航 ========== -->
+    <nav class="nav">
+      <div class="nav-inner">
+        <a href="#" class="nav-logo">kouzixuan<span class="dot">.</span></a>
+        <div class="nav-links">
+          <a href="#works">作品</a>
+          <a href="#about">关于</a>
+          <a href="#contact">联系</a>
+        </div>
+        <div class="nav-cta">
+          <div class="nav-icons">
+            <a href="#contact" class="nav-icon-btn" data-tooltip="邮箱" aria-label="邮箱">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="5" width="18" height="14" rx="2" />
+                <path d="m3 7 9 6 9-6" />
+              </svg>
+            </a>
+            <a href="#contact" class="nav-icon-btn" data-tooltip="GitHub" aria-label="GitHub">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path
+                  d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49v-1.71c-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.36-2.22-.26-4.56-1.14-4.56-5.07 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.27 2.75 1.05A9.4 9.4 0 0 1 12 6.85c.85 0 1.71.12 2.51.34 1.91-1.32 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.94-2.34 4.81-4.57 5.06.36.32.68.94.68 1.9v2.82c0 .27.18.6.69.49A10.26 10.26 0 0 0 22 12.25C22 6.58 17.52 2 12 2z"
+                />
+              </svg>
+            </a>
+          </div>
+          <a href="#contact" class="button green">开始合作</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- ========== 第一屏：Hero 标题独占 ========== -->
+    <header class="hero">
+      <span class="hero-eyebrow">
+        <span class="pulse"></span>
+        正在接受新项目委托
+      </span>
+      <h1 class="hero-title">
+        <span class="hero-title-line">设计有温度的</span>
+        <span class="hero-title-line"><span class="accent">数字产品</span>，</span>
+        <span class="hero-title-line"><span class="script">from idea</span> to ship.</span>
+      </h1>
+      <p class="hero-sub">独立设计师 / 前端工程师。专注为早期 SaaS 团队打造高级感品牌与产品体验，从视觉系统到落地代码一站式交付。</p>
+      <div class="hero-tags">
+        <span class="tag">Branding</span>
+        <span class="tag">Product Design</span>
+        <span class="tag">Web Development</span>
+      </div>
+      <div class="hero-scroll-hint">
+        <span>向下滚动查看作品</span>
+        <span class="line"></span>
+      </div>
+    </header>
+
+    <!-- ========== 第二屏：3D 轮播独占 ========== -->
+    <section class="carousel-section">
+      <span class="carousel-section-eyebrow"><span class="accent">●</span> SELECTED WORK</span>
+      <div class="carousel-wrap">
+        <div class="carousel-list">
+          <div class="carousel-panel">
+            <div class="carousel-item">
+              <div class="carousel-screen-group">
+                <div class="carousel-screen-single-frame">
+                  <img class="carousel-screen carousel-screen--single" src="./assets/img/carousel/newdee.png" alt="" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="carousel-panel">
+            <div class="carousel-item">
+              <div class="carousel-screen-group">
+                <img class="carousel-screen carousel-screen--left" src="./assets/img/carousel/ruizhe.png" alt="" />
+                <img class="carousel-screen carousel-screen--center" src="./assets/img/carousel/ruizhe1.png" alt="" />
+                <img class="carousel-screen carousel-screen--right" src="./assets/img/carousel/ruizhe2.png" alt="" />
+              </div>
+            </div>
+          </div>
+          <div class="carousel-panel">
+            <div class="carousel-item">
+              <div class="carousel-screen-group">
+                <div class="carousel-screen-single-frame">
+                  <img class="carousel-screen carousel-screen--single" src="./assets/img/carousel/hesai.png" alt="" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="carousel-panel">
+            <div class="carousel-item">
+              <div class="carousel-screen-group">
+                <img class="carousel-screen carousel-screen--left" src="./assets/img/carousel/endress.png" alt="" />
+                <img class="carousel-screen carousel-screen--center" src="./assets/img/carousel/endress1.png" alt="" />
+                <img class="carousel-screen carousel-screen--right" src="./assets/img/carousel/endress2.png" alt="" />
+              </div>
+            </div>
+          </div>
+          <div class="carousel-panel">
+            <div class="carousel-item">
+              <div class="carousel-screen-group">
+                <div class="carousel-screen-single-frame">
+                  <img class="carousel-screen carousel-screen--single" src="./assets/img/carousel/yoha.png" alt="" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="carousel-panel">
+            <div class="carousel-item">
+              <div class="carousel-screen-group">
+                <img
+                  class="carousel-screen carousel-screen--left"
+                  src="https://res.cloudinary.com/dktan0jya/image/upload/v1778561160/Scale__1.2_fz0hox.png"
+                  alt=""
+                />
+                <img
+                  class="carousel-screen carousel-screen--center"
+                  src="https://res.cloudinary.com/dktan0jya/image/upload/v1778561180/Scale__1.2_uain47.png"
+                  alt=""
+                />
+                <img
+                  class="carousel-screen carousel-screen--right"
+                  src="https://res.cloudinary.com/dktan0jya/image/upload/v1778561191/Scale__1.2-2_ej52zq.png"
+                  alt=""
+                />
+              </div>
+            </div>
+          </div>
+          <div class="carousel-panel">
+            <div class="carousel-item">
+              <div class="carousel-screen-group">
+                <div class="carousel-screen-single-frame">
+                  <img class="carousel-screen carousel-screen--single" src="./assets/img/carousel/xclaw.png" alt="" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="carousel-panel">
+            <div class="carousel-item">
+              <div class="carousel-screen-group">
+                <img
+                  class="carousel-screen carousel-screen--left"
+                  src="https://res.cloudinary.com/dktan0jya/image/upload/v1780543280/iPhone_17_-_34_thqx2z.png"
+                  alt=""
+                />
+                <img
+                  class="carousel-screen carousel-screen--center"
+                  src="https://res.cloudinary.com/dktan0jya/image/upload/v1780543268/iPhone_17_-_35_fojd9f.png"
+                  alt=""
+                />
+                <img
+                  class="carousel-screen carousel-screen--right"
+                  src="https://res.cloudinary.com/dktan0jya/image/upload/v1780680593/iPhone_17_-_36_kffemu.png"
+                  alt=""
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="carousel-hint"><span class="arrow">←</span> 拖拽浏览作品 <span class="arrow">→</span></div>
+      </div>
+    </section>
+
+    <!-- ========== 作品（验证滚动揭示） ========== -->
+    <section class="section" id="works">
+      <div class="container">
+        <div class="section-head reveal-y">
+          <div>
+            <span class="section-eyebrow">SELECTED WORK</span>
+            <h2 class="section-title">近期项目</h2>
+          </div>
+          <a href="#contact" class="button">全部作品 →</a>
+        </div>
+
+        <div class="works-grid">
+          <a href="#" class="work-card reveal-y">
+            <img
+              src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Dark%20themed%20SaaS%20dashboard%20UI%20design%20with%20lime%20green%20accent%20color%2C%20modern%20minimal%20interface%2C%20data%20visualization%2C%20premium%20product%20design&image_size=landscape_4_3"
+              alt="项目 1"
+            />
+            <div class="work-card-meta">
+              <div class="work-card-title">Analytics Dashboard</div>
+              <div class="work-card-tag">SaaS · 2026</div>
+            </div>
+          </a>
+          <a href="#" class="work-card reveal-y">
+            <img
+              src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Mobile%20app%20interface%20design%20mockup%2C%20dark%20mode%2C%20minimal%20UI%2C%20fintech%20product%2C%20clean%20typography%2C%20premium%20aesthetic&image_size=landscape_4_3"
+              alt="项目 2"
+            />
+            <div class="work-card-meta">
+              <div class="work-card-title">Fintech Mobile App</div>
+              <div class="work-card-tag">iOS · 2026</div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== Footer ========== -->
+    <footer class="section" id="contact" style="padding-block: 80px">
+      <div class="container" style="text-align: center">
+        <span class="section-eyebrow reveal">LET'S TALK</span>
+        <h2 class="section-title reveal-y" style="margin: 12px auto 28px">
+          有项目想法？<span style="color: var(--color-accent); font-style: italic">聊聊</span>
+        </h2>
+        <a href="mailto:hello@kouzixuan.dev" class="button green reveal">hello@kouzixuan.dev</a>
+      </div>
+    </footer>
+
+    <script type="module" src="assets/js/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,409 @@
+/* ========== 导航栏 ========== */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  padding-block: 18px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: rgba(244, 244, 242, 0.7);
+  border-bottom: 1px solid var(--color-border);
+}
+.nav-inner {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding-inline: var(--gutter);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-logo {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.nav-logo .dot {
+  color: var(--color-accent);
+}
+.nav-links {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+}
+.nav-links a {
+  font-size: 14px;
+  color: var(--color-text-soft);
+  transition: color 0.3s var(--ease);
+}
+.nav-links a:hover {
+  color: var(--color-text);
+}
+.nav-cta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.nav-cta .button {
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+.nav-icons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.nav-icon-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-bg-card);
+  color: var(--color-text-soft);
+  transition: all 0.3s var(--ease);
+}
+.nav-icon-btn:hover {
+  color: var(--color-text);
+  border-color: var(--color-text);
+  transform: translateY(-1px);
+}
+.nav-icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 720px) {
+  .nav-links {
+    display: none;
+  }
+}
+
+/* ========== 第一屏：Hero 标题独占 ========== */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding-top: 100px;
+  padding-bottom: 60px;
+  overflow: hidden;
+  text-align: center;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  width: 900px;
+  height: 900px;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(91, 140, 0, 0.1) 0%, transparent 60%);
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-eyebrow {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--color-text-soft);
+  padding: 6px 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  margin-bottom: 28px;
+  background: var(--color-bg-card);
+}
+.hero-eyebrow .pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  box-shadow: 0 0 0 0 rgba(91, 140, 0, 0.6);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(91, 140, 0, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(91, 140, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(91, 140, 0, 0);
+  }
+}
+
+.hero-title {
+  position: relative;
+  z-index: 2;
+  font-size: clamp(40px, 8vw, 104px);
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  margin-bottom: 24px;
+  max-width: 1100px;
+  padding-inline: var(--gutter);
+}
+.hero-title-line {
+  display: block;
+  overflow: hidden;
+}
+.hero-title .accent {
+  color: var(--color-accent);
+  font-style: italic;
+}
+.hero-title .script {
+  font-family: var(--font-script);
+  font-weight: 400;
+  font-style: normal;
+}
+
+.hero-sub {
+  position: relative;
+  z-index: 2;
+  font-size: clamp(15px, 1.4vw, 19px);
+  color: var(--color-text-soft);
+  max-width: 620px;
+  margin-bottom: 32px;
+  line-height: 1.6;
+  padding-inline: var(--gutter);
+}
+
+.hero-tags {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 48px;
+}
+
+.hero-scroll-hint {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-text-mute);
+}
+.hero-scroll-hint .line {
+  width: 1px;
+  height: 32px;
+  background: linear-gradient(to bottom, var(--color-accent), transparent);
+  animation: scrollLine 2s ease-in-out infinite;
+}
+@keyframes scrollLine {
+  0%,
+  100% {
+    transform: scaleY(0.4);
+    transform-origin: top;
+  }
+  50% {
+    transform: scaleY(1);
+    transform-origin: top;
+  }
+}
+
+/* ========== 第二屏：3D 轮播独占（严格对齐原站 img-carousel 源码） ========== */
+.carousel-section {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+/* 对应原站 .img-carousel__wrap */
+.carousel-wrap {
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.carousel-wrap:active {
+  cursor: grabbing;
+}
+
+/* 对应原站 .img-carousel__list
+   关键：font-size: 1vw，这样子元素的 em 单位都基于 1vw
+   perspective: 90vw，width: 80vw，height: 100vh */
+.carousel-list {
+  z-index: 1;
+  perspective: 90vw;
+  perspective-origin: 50%;
+  transform-style: preserve-3d;
+  justify-content: center;
+  align-items: center;
+  width: 80vw;
+  height: 100vh;
+  margin: 0 auto;
+  font-size: 1vw;
+  display: flex;
+  position: relative;
+  --carousel-mobile-screen-height: 30em;
+  --carousel-desktop-screen-height: 52em;
+}
+
+/* 对应原站 .img-carousel__panel
+   纯定位载体：无背景/边框/阴影/padding
+   left/top: 50% + JS 用 xPercent/yPercent: -50 居中（原站靠 flex static position，跨浏览器不可靠）
+   height: 28em = 28vw（基于 list 的 font-size: 1vw） */
+.carousel-panel {
+  will-change: transform;
+  backface-visibility: hidden;
+  z-index: 0;
+  justify-content: center;
+  align-items: center;
+  width: auto;
+  height: 28em;
+  display: flex;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  overflow: visible;
+  transform-style: preserve-3d;
+}
+
+/* 对应原站 .img-carousel__item */
+.carousel-item {
+  height: 100%;
+  width: auto;
+  position: relative;
+  overflow: visible;
+  transform-style: preserve-3d;
+}
+
+/* 对应原站 .img-carousel__screen-group */
+.carousel-screen-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  height: 100%;
+  transform-style: preserve-3d;
+  position: relative;
+}
+
+/* 恢复统一的 3D 空间基准，避免左右两侧出现不同层级感 */
+.carousel-screen {
+  object-fit: contain;
+  height: 100%;
+  width: auto;
+  transform-style: preserve-3d;
+  transition: filter 0.3s ease-out;
+  transform: translateZ(4em);
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+/* 参考原站：单张桌面图在 3D 空间里略微后退，
+   这样左右两侧时不会和手机组三联产生明显“断层” */
+.carousel-screen-single-frame {
+  /* height: 32em; */
+  width: auto;
+  border-radius: 15px;
+  overflow: hidden;
+  transform: translateZ(1.6em);
+  transform-style: preserve-3d;
+}
+
+.carousel-screen--single {
+  transform: none;
+  height: 100%;
+  width: auto;
+  display: block;
+}
+
+/* 3 张手机图组 - 左侧：rotateY(-15deg) 往左倾
+   iPhone 风格小圆角（约屏幕宽度 8%，手机图上约 24px） */
+.carousel-screen--left {
+  transform: rotateY(-15deg) translateZ(4em);
+  transform-origin: right center;
+  border-radius: 24px;
+}
+
+/* 3 张手机图组 - 中间：translateZ(4em) 凸出 */
+.carousel-screen--center {
+  transform: translateZ(4em);
+  z-index: 2;
+  border-radius: 24px;
+}
+
+/* 3 张手机图组 - 右侧：rotateY(15deg) 往右倾 */
+.carousel-screen--right {
+  transform: rotateY(15deg) translateZ(4em);
+  transform-origin: left center;
+  border-radius: 24px;
+}
+
+.carousel-hint {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-text-mute);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 5;
+  pointer-events: none;
+}
+.carousel-hint .arrow {
+  color: var(--color-accent);
+}
+
+.carousel-section-eyebrow {
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-text-soft);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.carousel-section-eyebrow .accent {
+  color: var(--color-accent);
+}
+
+/* 对应原站 mobile：max-width: 800px 时 list zoom: 200% */
+@media only screen and (max-width: 800px) {
+  .carousel-list {
+    zoom: 200%;
+  }
+  @media (max-height: 400px) {
+    .carousel-list {
+      zoom: 100%;
+    }
+  }
+}
