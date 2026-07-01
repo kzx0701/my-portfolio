@@ -21,6 +21,16 @@
 }
 .button.green:hover { background: var(--color-accent-bright); border-color: var(--color-accent-bright); }
 
+.button.ghost {
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--color-text);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+.button.ghost:hover {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(0, 0, 0, 0.16);
+}
+
 /* ========== 玻璃卡片（浅色） ========== */
 .glass-card {
   background: var(--glass-bg);
