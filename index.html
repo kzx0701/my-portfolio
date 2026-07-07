@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&family=Courier+Prime:wght@400;700&family=La+Belle+Aurore&family=Special+Elite&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=Courier+Prime:wght@400;700&family=La+Belle+Aurore&family=Special+Elite&display=swap"
       rel="stylesheet"
     />
 
@@ -19,6 +19,7 @@
     <link rel="stylesheet" href="assets/css/components.css" />
     <link rel="stylesheet" href="assets/css/sections/hero.css" />
     <link rel="stylesheet" href="assets/css/sections/works.css" />
+    <link rel="stylesheet" href="assets/css/sections/world.css" />
 
     <!-- GSAP + 插件（与 designfly 同源 jsdelivr，轮播需要 Draggable + InertiaPlugin） -->
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
@@ -254,6 +255,73 @@
               <div class="work-card-tag">iOS · 2026</div>
             </div>
           </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 第四屏：What my world looks like（严格复刻 hiartem.com 源码） ========== -->
+    <section class="world-section" id="world">
+      <div class="world-inner">
+        <div class="world-content">
+          <h2 class="world-title world-reveal">What my world looks like</h2>
+
+          <div class="world-row world-reveal">
+            <!-- 6 张图片：aspect-ratio / height 严格对应原站 framer-1jadtj9 / framer-yvlfwq / framer-k7teg4 / framer-8ogs5f / framer-4k8iwo / framer-1o62z01 -->
+            <div class="world-frame" style="--ar:1.1822;--ht:236px;--ht-mobile:169px">
+              <img
+                src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Minimal%20developer%20workspace%20desk%20with%20laptop%20showing%20code%2C%20mechanical%20keyboard%2C%20warm%20ambient%20lighting%2C%20clean%20scandinavian%20aesthetic%2C%20plants%2C%20top%20down%20view&image_size=landscape_4_3"
+                alt=""
+                loading="lazy"
+                decoding="async"
+                draggable="false"
+              />
+            </div>
+            <div class="world-frame" style="--ar:0.914754;--ht:305px;--ht-mobile:219px">
+              <img
+                src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Cozy%20coffee%20shop%20interior%20with%20warm%20light%2C%20laptop%20on%20wooden%20table%2C%20latte%20art%20cup%2C%20remote%20work%20lifestyle%2C%20soft%20bokeh%2C%20cinematic%20mood&image_size=portrait_4_3"
+                alt=""
+                loading="lazy"
+                decoding="async"
+                draggable="false"
+              />
+            </div>
+            <div class="world-frame" style="--ar:0.738095;--ht:379px;--ht-mobile:272px">
+              <img
+                src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Modern%20city%20skyline%20at%20dusk%2C%20urban%20architecture%2C%20soft%20purple%20orange%20sky%2C%20clean%20minimal%20cityscape%20photography%2C%20silhouette%20of%20buildings&image_size=portrait_4_3"
+                alt=""
+                loading="lazy"
+                decoding="async"
+                draggable="false"
+              />
+            </div>
+            <div class="world-frame" style="--ar:1.00722;--ht:277px;--ht-mobile:199px">
+              <img
+                src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Close%20up%20of%20mechanical%20keyboard%20with%20RGB%20backlight%2C%20dark%20moody%20lighting%2C%20keycaps%20detail%2C%20tech%20hardware%20photography%2C%20shallow%20depth%20of%20field&image_size=square"
+                alt=""
+                loading="lazy"
+                decoding="async"
+                draggable="false"
+              />
+            </div>
+            <div class="world-frame" style="--ar:0.797143;--ht:350px;--ht-mobile:251px">
+              <img
+                src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Serene%20mountain%20landscape%20at%20sunrise%2C%20misty%20valley%2C%20minimal%20nature%20photography%2C%20calm%20atmosphere%2C%20soft%20golden%20light%2C%20hiking%20adventure%20view&image_size=portrait_4_3"
+                alt=""
+                loading="lazy"
+                decoding="async"
+                draggable="false"
+              />
+            </div>
+            <div class="world-frame" style="--ar:0.853211;--ht:328px;--ht-mobile:234px">
+              <img
+                src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Travel%20backpack%20and%20camera%20on%20vintage%20map%2C%20wanderlust%20still%20life%2C%20adventure%20gear%2C%20warm%20tones%2C%20flat%20lay%20photography%2C%20vinyl%20record%20player%20warm%20analog%20mood&image_size=portrait_4_3"
+                alt=""
+                loading="lazy"
+                decoding="async"
+                draggable="false"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </section>

@@ -1,0 +1,190 @@
+/* ========== 第四屏：What my world looks like（严格复刻 hiartem.com 源码） ==========
+   源码来自 Framer 导出，原始类名 framer-6bbkof / framer-1tvcmag / framer-11wzbkc 等
+   以下逐条对应原始 CSS，仅做命名转换与项目变量适配
+   ========================================================================== */
+
+/* 对应 .framer-6bbkof — section 外层 */
+.world-section {
+  z-index: 1;
+  background-color: transparent; /* 保留项目背景（圆点），原站为 #fff */
+  flex-flow: column;
+  flex: none;
+  place-content: center flex-start;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  height: min-content;
+  padding: 40px 0 0;
+  display: flex;
+  position: relative;
+  overflow: visible;
+}
+
+/* 对应 .framer-1tvcmag — 内层容器（id="inspo"） */
+.world-inner {
+  z-index: 2;
+  flex-flow: column;
+  flex: none;
+  place-content: center flex-start;
+  align-items: center;
+  gap: 40px;
+  width: 100%;
+  height: min-content;
+  padding: 0 32px;
+  scroll-margin-top: 220px;
+  display: flex;
+  position: relative;
+  overflow: visible;
+}
+
+/* 对应 .framer-1yvxud — 内容包装 */
+.world-content {
+  flex-flow: column;
+  flex: none;
+  place-content: flex-start center;
+  align-items: flex-start; /* 标题左对齐 */
+  gap: 48px;
+  width: 100%;
+  max-width: 900px;
+  height: min-content;
+  padding: 0;
+  display: flex;
+  position: relative;
+  overflow: visible;
+}
+
+/* 对应 .framer-1b8ro3z + h2 — 标题 */
+.world-title {
+  --font-selector: R0Y7SW5zdHJ1bWVudCBTYW5zLXZhcmlhYmxlLXJlZ3VsYXJWRj1JbmRrZEdnaUlEZzFMQ0FpZDJkb2RDSWdOekF3;
+  font-family: "Instrument Sans", "Instrument Sans Variable", "Inter", sans-serif;
+  font-size: 96px;
+  font-weight: 700;
+  font-stretch: 85%; /* 对应 --framer-font-variation-axes: "wdth" 85 */
+  letter-spacing: -0.03em;
+  line-height: 90%;
+  white-space: pre-wrap;
+  word-break: break-word;
+  word-wrap: break-word;
+  flex: none;
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+  position: relative;
+  color: var(--color-text);
+  margin: 0;
+  text-align: left;
+}
+
+/* 对应 .framer-11wzbkc — 图片行容器（桌面：横向 row） */
+.world-row {
+  flex-flow: row;
+  flex: none;
+  place-content: flex-start;
+  align-items: flex-start;
+  gap: 20px;
+  width: 100%;
+  height: min-content;
+  padding: 0;
+  display: flex;
+  position: relative;
+  overflow: visible;
+}
+
+/* 对应 6 个图片帧共用的样式（framer-1jadtj9 等）
+   --border: 1px solid #00000026
+   box-shadow: 0 0 0 4px #fff, 0 6px 8px #0000004d
+   border-radius: 8px, overflow:hidden, pointer-events:none */
+.world-frame {
+  --border-bottom-width: 1px;
+  --border-color: #00000026;
+  --border-left-width: 1px;
+  --border-right-width: 1px;
+  --border-style: solid;
+  --border-top-width: 1px;
+  -webkit-user-select: none;
+  user-select: none;
+  pointer-events: none;
+  will-change: transform;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  flex: none;
+  gap: 0;
+  /* 桌面行布局：width 由 aspect-ratio + height 计算（对应原站每帧 ~279px 宽），
+     不用 width:100%，否则每个帧都会撑满 900px 容器 */
+  width: auto;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 0 4px #fff, 0 6px 8px #0000004d;
+  aspect-ratio: var(--ar);
+  height: var(--ht);
+}
+
+.world-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  corner-shape: inherit;
+  object-position: center;
+  object-fit: cover;
+  -webkit-user-drag: none;
+}
+
+/* ---------- 入场动画初始态（对应原站 will-change:transform; opacity:0; transform:translateY(56px)） ---------- */
+.world-reveal {
+  will-change: transform;
+  opacity: 0;
+  transform: translateY(56px);
+}
+
+/* ---------- 响应式：对应原站 media query ---------- */
+/* 中等屏幕：标题 80px，max-width 480px */
+@media (max-width: 1792px) {
+  /* 原站 hidden-1792uxd 变体激活，但布局不变，仅字号变化由 clamp 处理 */
+}
+
+@media (max-width: 1200px) {
+  .world-title {
+    font-size: 80px;
+    max-width: 480px;
+  }
+}
+
+/* 小屏幕：标题 72px，max-width 440px，图片行变 column */
+@media (max-width: 820px) {
+  .world-title {
+    font-size: 72px;
+    max-width: 440px;
+  }
+  .world-row {
+    flex-direction: column; /* 对应原站 framer-11wzbkc { flex-direction: column } */
+  }
+  .world-inner {
+    padding: 0 20px; /* 对应原站 framer-1tvcmag { padding: 0 20px } */
+  }
+  /* 图片帧：列布局下宽度撑满，高度由 mobile 值控制（对应原站每个帧的 mobile height） */
+  .world-frame {
+    width: 100%;
+    height: var(--ht-mobile, var(--ht));
+  }
+}
+
+@media (max-width: 600px) {
+  .world-title {
+    font-size: clamp(48px, 12vw, 72px);
+  }
+}
+
+/* ---------- 减少动效 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .world-reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- 无 JS 兜底 ---------- */
+.no-js .world-reveal {
+  opacity: 1;
+  transform: none;
+}
