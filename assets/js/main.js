@@ -19,7 +19,7 @@ function init() {
     carouselController = initCarousel();
   });
 
-  // 第四屏：What my world looks like 卡片批次入场 + 图片视差
+  // 第三屏：What my world looks like 卡片批次入场 + 图片视差
   initWorld();
 
   // 其余 section 滚动揭示（world 卡片已由 initWorld 接管，但仍保留 reveal-y 供兜底）

@@ -18,7 +18,6 @@
     <link rel="stylesheet" href="assets/css/base.css" />
     <link rel="stylesheet" href="assets/css/components.css" />
     <link rel="stylesheet" href="assets/css/sections/hero.css" />
-    <link rel="stylesheet" href="assets/css/sections/works.css" />
     <link rel="stylesheet" href="assets/css/sections/world.css" />
 
     <!-- GSAP + 插件（与 designfly 同源 jsdelivr，轮播需要 Draggable + InertiaPlugin） -->
@@ -58,7 +57,7 @@
       </div>
     </nav>
 
-    <!-- ========== 第一屏：复刻 Franz 首屏 ========== -->
+    <!-- ========== 第一屏：Hero 首屏 ========== -->
     <header class="hero" role="region" aria-label="Hero Introduction" data-hero-parallax>
       <div class="hero-meta hero-meta--left">
         <div class="hero-meta-line">
@@ -117,7 +116,7 @@
       </a>
     </header>
 
-    <!-- ========== 第二屏：3D 轮播独占 ========== -->
+    <!-- ========== 第二屏：项目轮播 ========== -->
     <section class="carousel-section" id="showcase">
       <span class="carousel-section-eyebrow"><span class="accent">●</span> SELECTED WORK</span>
       <div class="carousel-wrap">
@@ -223,103 +222,119 @@
       </div>
     </section>
 
-    <!-- ========== 作品（验证滚动揭示） ========== -->
-    <section class="section" id="works">
-      <div class="container">
-        <div class="section-head reveal-y">
-          <div>
-            <span class="section-eyebrow">SELECTED WORK</span>
-            <h2 class="section-title">近期项目</h2>
-          </div>
-          <a href="#contact" class="button">全部作品 →</a>
-        </div>
-
-        <div class="works-grid">
-          <a href="#" class="work-card reveal-y">
-            <img
-              src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Dark%20themed%20SaaS%20dashboard%20UI%20design%20with%20lime%20green%20accent%20color%2C%20modern%20minimal%20interface%2C%20data%20visualization%2C%20premium%20product%20design&image_size=landscape_4_3"
-              alt="项目 1"
-            />
-            <div class="work-card-meta">
-              <div class="work-card-title">Analytics Dashboard</div>
-              <div class="work-card-tag">SaaS · 2026</div>
-            </div>
-          </a>
-          <a href="#" class="work-card reveal-y">
-            <img
-              src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Mobile%20app%20interface%20design%20mockup%2C%20dark%20mode%2C%20minimal%20UI%2C%20fintech%20product%2C%20clean%20typography%2C%20premium%20aesthetic&image_size=landscape_4_3"
-              alt="项目 2"
-            />
-            <div class="work-card-meta">
-              <div class="work-card-title">Fintech Mobile App</div>
-              <div class="work-card-tag">iOS · 2026</div>
-            </div>
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <!-- ========== 第四屏：What my world looks like（严格复刻 hiartem.com 源码） ========== -->
+    <!-- ========== 第三屏：What my world looks like（严格复刻 origin.html 源码） ========== -->
     <section class="world-section" id="world">
       <div class="world-inner">
         <div class="world-content">
-          <h2 class="world-title world-reveal">What my world looks like</h2>
+          <!-- 标题 framer-1b8ro3z -->
+          <div class="world-title-wrap world-reveal">
+            <h2 class="world-title">What my world looks like</h2>
+          </div>
 
+          <!-- 外层 .world-row = framer-11wzbkc（入场动画）
+               内层 3 个 column = framer-87wfsd / framer-v3y5vu / framer-dehvaw（滚动视差）
+               每列 6 张图片竖向堆叠，3 列并排形成 masonry -->
           <div class="world-row world-reveal">
-            <!-- 6 张图片：aspect-ratio / height 严格对应原站 framer-1jadtj9 / framer-yvlfwq / framer-k7teg4 / framer-8ogs5f / framer-4k8iwo / framer-1o62z01 -->
-            <div class="world-frame" style="--ar:1.1822;--ht:236px;--ht-mobile:169px">
-              <img
-                src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Minimal%20developer%20workspace%20desk%20with%20laptop%20showing%20code%2C%20mechanical%20keyboard%2C%20warm%20ambient%20lighting%2C%20clean%20scandinavian%20aesthetic%2C%20plants%2C%20top%20down%20view&image_size=landscape_4_3"
-                alt=""
-                loading="lazy"
-                decoding="async"
-                draggable="false"
-              />
+            <!-- Column 1: framer-87wfsd -->
+            <div class="world-col-1" data-world-parallax>
+              <div class="world-frame world-frame-1" style="--ar:1.1822;--ht:236px" data-border="true" draggable="false">
+                <div class="world-frame-bg">
+                  <img decoding="async" loading="lazy" width="495" height="438" src="https://framerusercontent.com/images/X1ELuuX7i63wSt1JAmhY629Ook.webp?width=495&height=438" alt="" draggable="false" />
+                </div>
+              </div>
+              <div class="world-frame world-frame-2" style="--ar:0.914754;--ht:305px" data-border="true" draggable="false">
+                <div class="world-frame-bg">
+                  <img decoding="async" loading="lazy" width="496" height="661" src="https://framerusercontent.com/images/i7MQt9QhjbUH1eCOee4evqeVGQg.webp?scale-down-to=512&width=496&height=661" alt="" draggable="false" />
+                </div>
+              </div>
+              <div class="world-frame world-frame-3" style="--ar:0.738095;--ht:379px" data-border="true" draggable="false">
+                <div class="world-frame-bg">
+                  <img decoding="async" loading="lazy" width="495" height="661" src="https://framerusercontent.com/images/3Jdzdhi2eh6oErQmGPCg1B2AoQ.webp?scale-down-to=512&width=495&height=661" alt="" draggable="false" />
+                </div>
+              </div>
+              <div class="world-frame world-frame-4" style="--ar:1.00722;--ht:277px" data-border="true" draggable="false">
+                <div class="world-frame-bg">
+                  <img decoding="async" loading="lazy" width="636" height="661" src="https://framerusercontent.com/images/gfZAxpE9OLvpqS5WnEU0tfFHLY.webp?scale-down-to=512&width=636&height=661" alt="" draggable="false" />
+                </div>
+              </div>
+              <div class="world-frame world-frame-5" style="--ar:0.797143;--ht:350px" data-border="true" draggable="false">
+                <div class="world-frame-bg">
+                  <img decoding="async" loading="lazy" width="533" height="661" src="https://framerusercontent.com/images/4iDQSAuyoMgAmnGYdoGA6MsH5o.webp?scale-down-to=512&width=533&height=661" alt="" draggable="false" />
+                </div>
+              </div>
+              <div class="world-frame world-frame-6" style="--ar:0.853211;--ht:328px" data-border="true" draggable="false">
+                <div class="world-frame-bg">
+                  <img decoding="async" loading="lazy" width="496" height="661" src="https://framerusercontent.com/images/Vm0wJEuABd2J1LO5nhkZ0YcTT0.webp?scale-down-to=512&width=496&height=661" alt="" draggable="false" />
+                </div>
+              </div>
             </div>
-            <div class="world-frame" style="--ar:0.914754;--ht:305px;--ht-mobile:219px">
-              <img
-                src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Cozy%20coffee%20shop%20interior%20with%20warm%20light%2C%20laptop%20on%20wooden%20table%2C%20latte%20art%20cup%2C%20remote%20work%20lifestyle%2C%20soft%20bokeh%2C%20cinematic%20mood&image_size=portrait_4_3"
-                alt=""
-                loading="lazy"
-                decoding="async"
-                draggable="false"
-              />
+
+            <!-- Column 2: framer-v3y5vu -->
+            <div class="world-col-2" data-world-parallax>
+              <div class="world-frame world-frame-7" style="--ar:0.799427;--ht:349px" data-border="true" draggable="false">
+                <div class="world-frame-bg">
+                  <img decoding="async" loading="lazy" width="495" height="660" src="https://framerusercontent.com/images/pVwOylqu0k0FBoSffAan2CGzU.webp?scale-down-to=512&width=495&height=660" alt="" draggable="false" />
+                </div>
+              </div>
+              <div class="world-frame world-frame-8" style="--ar:1.26244;--ht:221px" data-border="true" draggable="false">
+                <div class="world-frame-bg">
+                  <img decoding="async" loading="lazy" width="882" height="661" src="https://framerusercontent.com/images/6XNQ4n5iaRJvZbiTq4U82qYQOng.webp?scale-down-to=512&width=882&height=661" alt="" draggable="false" />
+                </div>
+              </div>
+              <div class="world-frame world-frame-9" style="--ar:1.10714;--ht:252px" data-border="true" draggable="false">
+                <div class="world-frame-bg">
+                  <img decoding="async" loading="lazy" width="496" height="661" src="https://framerusercontent.com/images/CdISPmJFdDNPcyVcTOixcHlMZjk.webp?scale-down-to=512&width=496&height=661" alt="" draggable="false" />
+                </div>
+              </div>
+              <div class="world-frame world-frame-10" style="--ar:1.02952;--ht:271px" data-border="true" draggable="false">
+                <div class="world-frame-bg">
+                  <img decoding="async" loading="lazy" width="496" height="661" src="https://framerusercontent.com/images/Rb0hBJ8MDR9yWHh4ZxqGiqftSEQ.webp?scale-down-to=512&width=496&height=661" alt="" draggable="false" />
+                </div>
+              </div>
+              <div class="world-frame world-frame-11" style="--ar:0.772853;--ht:362px" data-border="true" draggable="false">
+                <div class="world-frame-bg">
+                  <img decoding="async" loading="lazy" width="495" height="661" src="https://framerusercontent.com/images/oyF5cdBYA8PrfQPTjE1j4KhxzM.webp?scale-down-to=512&width=495&height=661" alt="" draggable="false" />
+                </div>
+              </div>
+              <div class="world-frame world-frame-12" style="--ar:0.823529;--ht:340px" data-border="true" draggable="false">
+                <div class="world-frame-bg">
+                  <img decoding="async" loading="lazy" width="496" height="660" src="https://framerusercontent.com/images/73PLlIUEU3tfNv9fSbTib6HCw.webp?width=496&height=660" alt="" draggable="false" />
+                </div>
+              </div>
             </div>
-            <div class="world-frame" style="--ar:0.738095;--ht:379px;--ht-mobile:272px">
-              <img
-                src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Modern%20city%20skyline%20at%20dusk%2C%20urban%20architecture%2C%20soft%20purple%20orange%20sky%2C%20clean%20minimal%20cityscape%20photography%2C%20silhouette%20of%20buildings&image_size=portrait_4_3"
-                alt=""
-                loading="lazy"
-                decoding="async"
-                draggable="false"
-              />
-            </div>
-            <div class="world-frame" style="--ar:1.00722;--ht:277px;--ht-mobile:199px">
-              <img
-                src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Close%20up%20of%20mechanical%20keyboard%20with%20RGB%20backlight%2C%20dark%20moody%20lighting%2C%20keycaps%20detail%2C%20tech%20hardware%20photography%2C%20shallow%20depth%20of%20field&image_size=square"
-                alt=""
-                loading="lazy"
-                decoding="async"
-                draggable="false"
-              />
-            </div>
-            <div class="world-frame" style="--ar:0.797143;--ht:350px;--ht-mobile:251px">
-              <img
-                src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Serene%20mountain%20landscape%20at%20sunrise%2C%20misty%20valley%2C%20minimal%20nature%20photography%2C%20calm%20atmosphere%2C%20soft%20golden%20light%2C%20hiking%20adventure%20view&image_size=portrait_4_3"
-                alt=""
-                loading="lazy"
-                decoding="async"
-                draggable="false"
-              />
-            </div>
-            <div class="world-frame" style="--ar:0.853211;--ht:328px;--ht-mobile:234px">
-              <img
-                src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Travel%20backpack%20and%20camera%20on%20vintage%20map%2C%20wanderlust%20still%20life%2C%20adventure%20gear%2C%20warm%20tones%2C%20flat%20lay%20photography%2C%20vinyl%20record%20player%20warm%20analog%20mood&image_size=portrait_4_3"
-                alt=""
-                loading="lazy"
-                decoding="async"
-                draggable="false"
-              />
+
+            <!-- Column 3: framer-dehvaw -->
+            <div class="world-col-3" data-world-parallax>
+              <div class="world-frame world-frame-13" style="--ar:0.905844;--ht:308px" data-border="true" draggable="false">
+                <div class="world-frame-bg">
+                  <img decoding="async" loading="lazy" width="495" height="660" src="https://framerusercontent.com/images/RQPWnEgufDeawNwubL85QsUgpM.webp?scale-down-to=512&width=495&height=660" alt="" draggable="false" />
+                </div>
+              </div>
+              <div class="world-frame world-frame-14" style="--ar:0.738095;--ht:378px" data-border="true" draggable="false">
+                <div class="world-frame-bg">
+                  <img decoding="async" loading="lazy" width="495" height="661" src="https://framerusercontent.com/images/ePaJ1yErqTqDeyM6ovr6uSvds.webp?scale-down-to=512&width=495&height=661" alt="" draggable="false" />
+                </div>
+              </div>
+              <div class="world-frame world-frame-15" style="--ar:0.962069;--ht:290px" data-border="true" draggable="false">
+                <div class="world-frame-bg">
+                  <img decoding="async" loading="lazy" width="495" height="661" src="https://framerusercontent.com/images/0JdiSuoUNVZdS3FlZhXsOKb90.webp?scale-down-to=512&width=495&height=661" alt="" draggable="false" />
+                </div>
+              </div>
+              <div class="world-frame world-frame-16" style="--ar:0.86646;--ht:323px" data-border="true" draggable="false">
+                <div class="world-frame-bg">
+                  <img decoding="async" loading="lazy" width="496" height="565" src="https://framerusercontent.com/images/BRMTaFCK3RkDXIEpTY9tiO1hqk.webp?scale-down-to=512&width=496&height=565" alt="" draggable="false" />
+                </div>
+              </div>
+              <div class="world-frame world-frame-17" style="--ar:0.775;--ht:360px" data-border="true" draggable="false">
+                <div class="world-frame-bg">
+                  <img decoding="async" loading="lazy" width="496" height="660" src="https://framerusercontent.com/images/va0iexhFk5rbIncnfw26N6L0WEM.webp?scale-down-to=512&width=496&height=660" alt="" draggable="false" />
+                </div>
+              </div>
+              <div class="world-frame world-frame-18" style="--ar:1.15768;--ht:241px" data-border="true" draggable="false">
+                <div class="world-frame-bg">
+                  <img decoding="async" loading="lazy" width="495" height="501" src="https://framerusercontent.com/images/t94rI45CZEd2qzg9c7llLYlgTw.webp?width=495&height=501" alt="" draggable="false" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
