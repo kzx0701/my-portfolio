@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { cn } from '@/lib/utils'
 import { computed } from 'vue'
+import { TabsList } from 'reka-ui'
 
 const props = defineProps<{ class?: string }>()
 const cls = computed(() =>
-  cn('inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground', props.class),
+  cn(
+    'inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground',
+    props.class,
+  ),
 )
 </script>
 
 <template>
-  <div :class="cls">
+  <TabsList :class="cls">
     <slot />
-  </div>
+  </TabsList>
 </template>

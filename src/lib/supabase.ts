@@ -1,7 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-
-// 类型：后续可导入 Supabase 生成的 Database 类型（从 Supabase CLI 生成）
-export type Database = any
+import type { Database } from './database.types'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
 const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string

@@ -8,6 +8,7 @@ import { OrderTable } from '@/modules/orders/components'
 import { OrderFormDialog } from '@/modules/orders/components'
 import { OrderDeleteDialog } from '@/modules/orders/components'
 import { StatCard } from '@/modules/orders/components'
+import { toast } from '@/lib/toast'
 
 const store = useOrdersStore()
 
@@ -46,7 +47,7 @@ async function handleSubmit(input: OrderInput) {
     formOpen.value = false
   } catch (e: any) {
     console.error('保存订单失败', e)
-    alert(e?.message ?? '保存失败')
+    toast(e?.message ?? '保存失败', 'error')
   } finally {
     submitting.value = false
   }
@@ -60,7 +61,7 @@ async function handleDeleteConfirm() {
     deleteTarget.value = null
   } catch (e: any) {
     console.error('删除订单失败', e)
-    alert(e?.message ?? '删除失败')
+    toast(e?.message ?? '删除失败', 'error')
   } finally {
     deleting.value = false
   }

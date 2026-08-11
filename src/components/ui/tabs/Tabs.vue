@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@/lib/utils'
-import { computed, provide, ref, watch } from 'vue'
+import { computed } from 'vue'
+import { TabsRoot } from 'reka-ui'
 
 const props = withDefaults(
   defineProps<{
@@ -16,31 +17,22 @@ const emit = defineEmits<{
   change: [value: string]
 }>()
 
-// 内部活动值：优先使用外部 v-model，否则用内部状态
-const internalActive = ref(props.defaultValue)
-
-const active = computed(() => props.modelValue ?? internalActive.value)
-
-function setActive(value: string) {
-  internalActive.value = value
+function onValueChange(value: string | undefined) {
+  if (value === undefined) return
   emit('update:modelValue', value)
   emit('change', value)
 }
-
-provide('tabsActive', { active, setActive })
-
-watch(
-  () => props.defaultValue,
-  (v) => {
-    if (v) internalActive.value = v
-  },
-)
 
 const tabsClass = computed(() => cn(props.class))
 </script>
 
 <template>
-  <div :class="tabsClass">
+  <TabsRoot
+    :model-value="modelValue ?? undefined"
+    :default-value="defaultValue || undefined"
+    :class="tabsClass"
+    @update:model-value="onValueChange"
+  >
     <slot />
-  </div>
+  </TabsRoot>
 </template>

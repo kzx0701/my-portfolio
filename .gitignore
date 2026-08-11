@@ -20,6 +20,9 @@ dist-ssr
 # WorkBuddy tool data
 .workbuddy/
 
+# Cloudflare Wrangler local cache
+.wrangler/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

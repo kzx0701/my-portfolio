@@ -61,6 +61,5 @@ drop policy if exists "orders_delete_own" on public.orders;
 create policy "orders_delete_own" on public.orders
   for delete using (auth.uid() = user_id);
 
--- ---------- 5. 权限：授予角色表权限（RLS 会兜底过滤） ----------
+-- ---------- 5. 权限：仅授予登录用户（authenticated）表权限，anon 保持无权限（最小权限原则，RLS 兜底） ----------
 grant select, insert, update, delete on table public.orders to authenticated;
-grant select, insert, update, delete on table public.orders to anon;

@@ -1,11 +1,7 @@
+import type { Database } from '@/lib/database.types'
+
 /** 接单订单的进度阶段 */
-export type OrderStatus =
-  | 'pending' // 待报价
-  | 'negotiating' // 洽谈中
-  | 'in_progress' // 进行中
-  | 'completed' // 已完成
-  | 'paid' // 已回款
-  | 'cancelled' // 已取消
+export type OrderStatus = Database['public']['Tables']['orders']['Row']['status']
 
 /** 订单状态元数据（用于渲染 badge 颜色与下拉选项） */
 export const ORDER_STATUS_META: Record<
@@ -25,28 +21,7 @@ export const ORDER_STATUS_OPTIONS = (Object.keys(ORDER_STATUS_META) as OrderStat
 )
 
 /** 接单订单（对应 Supabase 表 orders） */
-export interface Order {
-  id: string
-  user_id: string
-  /** 项目名称 */
-  project_name: string
-  /** 客户名称（可空） */
-  client_name: string | null
-  /** 项目金额（单位：元，可空） */
-  amount: number | null
-  /** 当前阶段 */
-  status: OrderStatus
-  /** 进度百分比 0-100 */
-  progress: number
-  /** 项目描述 / 备注 */
-  description: string | null
-  /** 开始日期 */
-  start_date: string | null
-  /** 交付/截止日期 */
-  due_date: string | null
-  created_at: string
-  updated_at: string
-}
+export type Order = Database['public']['Tables']['orders']['Row']
 
 /** 新建 / 编辑订单的入参 */
 export type OrderInput = Omit<Order, 'id' | 'user_id' | 'created_at' | 'updated_at'>

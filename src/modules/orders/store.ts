@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
-import type { Order, OrderInput, OrderStatus } from './types'
+import type { Order, OrderInput } from './types'
 
 export const useOrdersStore = defineStore('orders', () => {
   const orders = ref<Order[]>([])
@@ -33,7 +33,7 @@ export const useOrdersStore = defineStore('orders', () => {
         .eq('user_id', auth.user.id)
         .order('created_at', { ascending: false })
       if (err) throw err
-      orders.value = (data as Order[]) ?? []
+      orders.value = data ?? []
     } catch (e: any) {
       error.value = e?.message ?? '加载订单失败'
       console.error('fetchOrders error:', e)
@@ -51,8 +51,8 @@ export const useOrdersStore = defineStore('orders', () => {
       .select()
       .single()
     if (err) throw err
-    orders.value.unshift(data as Order)
-    return data as Order
+    orders.value.unshift(data)
+    return data
   }
 
   async function updateOrder(id: string, input: Partial<OrderInput>) {
@@ -64,18 +64,14 @@ export const useOrdersStore = defineStore('orders', () => {
       .single()
     if (err) throw err
     const idx = orders.value.findIndex((o) => o.id === id)
-    if (idx !== -1) orders.value[idx] = data as Order
-    return data as Order
+    if (idx !== -1) orders.value[idx] = data
+    return data
   }
 
   async function deleteOrder(id: string) {
     const { error: err } = await supabase.from('orders').delete().eq('id', id)
     if (err) throw err
     orders.value = orders.value.filter((o) => o.id !== id)
-  }
-
-  async function setOrderStatus(id: string, status: OrderStatus) {
-    await updateOrder(id, { status })
   }
 
   return {
@@ -87,6 +83,5 @@ export const useOrdersStore = defineStore('orders', () => {
     createOrder,
     updateOrder,
     deleteOrder,
-    setOrderStatus,
   }
 })
