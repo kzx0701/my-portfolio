@@ -21,6 +21,10 @@ const auth = useAuthStore();
 
 const profileOpen = ref(false);
 
+/** 浏览器是否支持 View Transitions API（支持时由它负责页面过渡，避免与 Vue Transition 双重动画） */
+const supportsViewTransition =
+  typeof document !== "undefined" && !!document.startViewTransition;
+
 const currentTitle = computed(() => (route.meta.title as string) ?? "工作台");
 
 /** 是否处于首页（工作台总览，此时不显示侧边栏） */
@@ -147,12 +151,13 @@ async function handleLogout() {
         </div>
       </aside>
 
-      <!-- 主内容区（路由页面过渡：淡入+上移 / 淡出） -->
+      <!-- 主内容区：VT 支持时由 View Transitions API 过渡，否则用 Vue Transition（fade）降级 -->
       <main class="min-w-0 flex-1 overflow-auto p-6">
         <RouterView v-slot="{ Component }">
-          <Transition name="page" mode="out-in">
+          <Transition v-if="!supportsViewTransition" name="page" mode="out-in">
             <component :is="Component" />
           </Transition>
+          <component v-else :is="Component" />
         </RouterView>
       </main>
     </div>

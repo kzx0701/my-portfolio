@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { Plus, Briefcase, CheckCircle2, Wallet, Activity } from '@lucide/vue'
+import { Plus, Briefcase, CheckCircle2, Wallet, Activity, ClipboardList } from '@lucide/vue'
 import { Button, Skeleton } from '@/components/ui'
 import { useOrdersStore } from '@/modules/orders/store'
 import type { Order, OrderInput } from '@/modules/orders/types'
@@ -84,9 +84,18 @@ function formatCurrency(value: number): string {
 
     <!-- 工具栏 -->
     <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-lg font-semibold">接单列表</h2>
-        <p class="text-sm text-muted-foreground">管理你的接单项目进度</p>
+      <!-- 标题区（logo 与首页卡片同 viewTransitionName，实现 VT 共享元素 morphing） -->
+      <div class="flex items-center gap-3">
+        <div
+          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/25"
+          :style="{ viewTransitionName: 'vt-orders' }"
+        >
+          <ClipboardList class="h-5 w-5" />
+        </div>
+        <div>
+          <h2 class="text-lg font-semibold">接单列表</h2>
+          <p class="text-sm text-muted-foreground">管理你的接单项目进度</p>
+        </div>
       </div>
       <Button @click="openCreate">
         <Plus class="h-4 w-4" />

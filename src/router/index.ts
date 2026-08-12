@@ -45,6 +45,20 @@ const router = createRouter({
   routes,
 })
 
+// ---- View Transitions API：包装 push，使所有导航（含 RouterLink）自动带上页面过渡 ----
+// 原理：startViewTransition(() => router.push(to)) —— push 的 promise 作为回调返回值，
+// 浏览器等待导航完成（DOM 更新）后捕获新状态做快照过渡；
+// 不支持的浏览器静默降级为直接导航（无动画，优雅降级）。
+const originalPush = router.push.bind(router)
+router.push = ((to: Parameters<typeof router.push>[0]) => {
+  if (typeof document !== 'undefined' && document.startViewTransition) {
+    return document.startViewTransition(() => originalPush(to)) as unknown as ReturnType<
+      typeof router.push
+    >
+  }
+  return originalPush(to)
+}) as typeof router.push
+
 // 全局路由守卫：需要登录的页面未登录则跳转登录页
 router.beforeEach(async (to) => {
   const auth = useAuthStore()

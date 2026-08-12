@@ -77,6 +77,7 @@ const today = computed(() =>
               <div class="flex items-start gap-4">
                 <div
                   class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/25 transition-transform duration-300 group-hover:scale-105"
+                  :style="{ viewTransitionName: `vt-${mod.key}` }"
                 >
                   <component :is="mod.icon" class="h-5 w-5" />
                 </div>

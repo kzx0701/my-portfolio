@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
-import { ArrowLeft, Activity, Briefcase, CheckCircle2, Wallet } from '@lucide/vue'
+import { ArrowLeft, Activity, Briefcase, CheckCircle2, Wallet, ClipboardList } from '@lucide/vue'
 import type { EChartsCoreOption } from 'echarts/core'
 import EChart from '@/components/EChart.vue'
 import { Skeleton } from '@/components/ui'
@@ -177,9 +177,18 @@ const progressOption = computed<EChartsCoreOption>(() => ({
   <div class="mx-auto max-w-6xl space-y-6">
     <!-- 工具栏 -->
     <div class="flex items-center justify-between gap-3">
-      <div>
-        <h2 class="text-lg font-semibold">数据统计</h2>
-        <p class="text-sm text-muted-foreground">订单状态、金额与进度的可视化总览</p>
+      <!-- 标题区（logo 与首页卡片同 viewTransitionName，实现 VT 共享元素 morphing） -->
+      <div class="flex items-center gap-3">
+        <div
+          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/25"
+          :style="{ viewTransitionName: 'vt-orders' }"
+        >
+          <ClipboardList class="h-5 w-5" />
+        </div>
+        <div>
+          <h2 class="text-lg font-semibold">数据统计</h2>
+          <p class="text-sm text-muted-foreground">订单状态、金额与进度的可视化总览</p>
+        </div>
       </div>
       <RouterLink
         to="/orders"
