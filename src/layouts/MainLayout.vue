@@ -48,7 +48,31 @@ async function handleLogout() {
 </script>
 
 <template>
-  <div class="flex min-h-screen w-full flex-col bg-background">
+  <!-- relative isolate：创建层叠上下文，保证 -z-10 装饰层在 bg-background 之上、内容之下 -->
+  <div class="relative isolate flex min-h-screen w-full flex-col bg-background">
+    <!-- 首页全屏背景装饰（仅首页显示，布局层职责；覆盖全宽无白边） -->
+    <div
+      v-if="isHome"
+      class="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+    >
+      <!-- 主光晕：顶部中央（品牌靛蓝） -->
+      <div
+        class="absolute -top-40 left-1/2 h-96 w-[42rem] -translate-x-1/2 rounded-full bg-indigo-500/15 blur-3xl"
+      />
+      <!-- 辅助光晕：左下（紫罗兰） -->
+      <div
+        class="absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-violet-500/10 blur-3xl"
+      />
+      <!-- 辅助光晕：右上（天蓝，点缀冷暖层次） -->
+      <div
+        class="absolute -right-20 top-1/3 h-72 w-72 rounded-full bg-sky-400/[0.08] blur-3xl"
+      />
+      <!-- 细网格纹理：顶部可见、向下渐隐，避免生硬 -->
+      <div
+        class="absolute inset-0 bg-[linear-gradient(to_right,rgba(120,120,135,0.07)_1px,transparent_1px),linear-gradient(to_bottom,rgba(120,120,135,0.07)_1px,transparent_1px)] bg-[size:44px_44px] [mask-image:radial-gradient(ellipse_65%_55%_at_50%_0%,black,transparent)]"
+      />
+    </div>
+
     <!-- 顶栏（全宽） -->
     <header class="flex h-14 shrink-0 items-center justify-between border-b px-4 sm:px-6">
       <div class="flex min-w-0 items-center gap-3">
