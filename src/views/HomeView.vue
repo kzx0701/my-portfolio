@@ -32,8 +32,8 @@ const today = computed(() =>
 </script>
 
 <template>
-  <!-- 垂直居中 + 水平居中：扣除顶栏(3.5rem)与 main 内边距(3rem)，内容超高时自动扩展不裁切 -->
-  <div class="relative mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-5xl flex-col items-center justify-center">
+  <!-- 居中但略偏上：pb-[8vh] 使内容中心上移约 4vh，避免完全垂直居中的偏下感 -->
+  <div class="relative mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-5xl flex-col items-center justify-center pb-[8vh]">
     <!-- 顶部氛围光晕（极淡，明暗主题均可） -->
     <div
       class="pointer-events-none absolute -top-32 left-1/2 h-80 w-[38rem] -translate-x-1/2 rounded-full bg-primary/5 blur-3xl"
