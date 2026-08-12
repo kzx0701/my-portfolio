@@ -69,15 +69,20 @@ const today = computed(() =>
             />
 
             <CardHeader class="p-6">
-              <div
-                class="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25 transition-transform duration-300 group-hover:scale-105"
-              >
-                <component :is="mod.icon" class="h-6 w-6" />
+              <!-- 横排：左侧渐变小 logo + 右侧标题/描述 -->
+              <div class="flex items-start gap-4">
+                <div
+                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/25 transition-transform duration-300 group-hover:scale-105"
+                >
+                  <component :is="mod.icon" class="h-5 w-5" />
+                </div>
+                <div class="min-w-0">
+                  <CardTitle class="text-base font-semibold">{{ mod.title }}</CardTitle>
+                  <CardDescription class="mt-1 text-sm leading-relaxed">
+                    {{ mod.description }}
+                  </CardDescription>
+                </div>
               </div>
-              <CardTitle class="text-base font-semibold">{{ mod.title }}</CardTitle>
-              <CardDescription class="mt-1.5 text-sm leading-relaxed">
-                {{ mod.description }}
-              </CardDescription>
             </CardHeader>
             <CardFooter class="px-6 pb-6">
               <span class="inline-flex items-center gap-1.5 text-sm font-medium text-primary">
