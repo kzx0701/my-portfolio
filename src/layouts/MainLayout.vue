@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
-import { computed, ref } from 'vue'
-import { ArrowLeft, ChevronDown, ChevronRight, LogOut, UserRound } from '@lucide/vue'
+import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
+import { computed, ref } from "vue";
+import { ArrowLeft, ChevronDown, ChevronRight, LogOut, UserRound } from "@lucide/vue";
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -9,40 +9,36 @@ import {
   DropdownMenuRoot,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from 'reka-ui'
-import { Avatar, Separator } from '@/components/ui'
-import ProfileDialog from '@/components/ProfileDialog.vue'
-import { activeModules } from '@/modules/registry'
-import { useAuthStore } from '@/stores/auth'
+} from "reka-ui";
+import { Avatar, Separator } from "@/components/ui";
+import ProfileDialog from "@/components/ProfileDialog.vue";
+import { activeModules } from "@/modules/registry";
+import { useAuthStore } from "@/stores/auth";
 
-const route = useRoute()
-const router = useRouter()
-const auth = useAuthStore()
+const route = useRoute();
+const router = useRouter();
+const auth = useAuthStore();
 
-const profileOpen = ref(false)
+const profileOpen = ref(false);
 
-const currentTitle = computed(() => (route.meta.title as string) ?? '工作台')
+const currentTitle = computed(() => (route.meta.title as string) ?? "工作台");
 
 /** 是否处于首页（工作台总览，此时不显示侧边栏） */
-const isHome = computed(() => route.path === '/')
+const isHome = computed(() => route.path === "/");
 
 /** 当前所在模块（进入模块页后侧边栏显示该模块的菜单） */
-const currentModule = computed(() =>
-  activeModules.find(
-    (m) => route.path === m.path || route.path.startsWith(`${m.path}/`),
-  ),
-)
+const currentModule = computed(() => activeModules.find((m) => route.path === m.path || route.path.startsWith(`${m.path}/`)));
 
-const userInitial = computed(() => auth.username.charAt(0).toUpperCase() || '客')
+const userInitial = computed(() => auth.username.charAt(0).toUpperCase() || "客");
 
-const userEmail = computed(() => auth.user?.email ?? '')
+const userEmail = computed(() => auth.user?.email ?? "");
 
 async function handleLogout() {
   try {
-    await auth.signOut()
-    router.push({ name: 'login' })
+    await auth.signOut();
+    router.push({ name: "login" });
   } catch (e) {
-    console.error('退出登录失败', e)
+    console.error("退出登录失败", e);
   }
 }
 </script>
@@ -51,22 +47,13 @@ async function handleLogout() {
   <!-- relative isolate：创建层叠上下文，保证 -z-10 装饰层在 bg-background 之上、内容之下 -->
   <div class="relative isolate flex min-h-screen w-full flex-col bg-background">
     <!-- 首页全屏背景装饰（仅首页显示，布局层职责；覆盖全宽无白边） -->
-    <div
-      v-if="isHome"
-      class="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
-    >
+    <div v-if="isHome" class="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
       <!-- 主光晕：顶部中央（品牌靛蓝） -->
-      <div
-        class="absolute -top-40 left-1/2 h-96 w-[42rem] -translate-x-1/2 rounded-full bg-indigo-500/15 blur-3xl"
-      />
+      <div class="absolute -top-40 left-1/2 h-96 w-[46rem] -translate-x-1/2 rounded-full bg-indigo-500/25 blur-3xl" />
       <!-- 辅助光晕：左下（紫罗兰） -->
-      <div
-        class="absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-violet-500/10 blur-3xl"
-      />
+      <div class="absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-violet-500/15 blur-3xl" />
       <!-- 辅助光晕：右上（天蓝，点缀冷暖层次） -->
-      <div
-        class="absolute -right-20 top-1/3 h-72 w-72 rounded-full bg-sky-400/[0.08] blur-3xl"
-      />
+      <div class="absolute -right-20 top-1/3 h-72 w-72 rounded-full bg-sky-400/10 blur-3xl" />
       <!-- 细网格纹理：顶部可见、向下渐隐，避免生硬 -->
       <div
         class="absolute inset-0 bg-[linear-gradient(to_right,rgba(120,120,135,0.07)_1px,transparent_1px),linear-gradient(to_bottom,rgba(120,120,135,0.07)_1px,transparent_1px)] bg-[size:44px_44px] [mask-image:radial-gradient(ellipse_65%_55%_at_50%_0%,black,transparent)]"
@@ -76,7 +63,7 @@ async function handleLogout() {
     <!-- 顶栏（全宽） -->
     <header class="flex h-14 shrink-0 items-center justify-between border-b px-4 sm:px-6">
       <div class="flex min-w-0 items-center gap-3">
-        <span class="text-lg font-bold tracking-tight">轩屿工作台</span>
+        <span class="text-lg font-bold tracking-tight">轩屿</span>
         <Separator orientation="vertical" class="h-5 hidden sm:block" />
         <h1 class="truncate text-base font-semibold">{{ currentTitle }}</h1>
       </div>
@@ -128,10 +115,7 @@ async function handleLogout() {
 
     <div class="flex min-h-0 flex-1">
       <!-- 侧边栏：仅进入模块后显示（渲染当前模块的菜单） -->
-      <aside
-        v-if="!isHome && currentModule"
-        class="hidden w-56 shrink-0 border-r bg-card md:flex md:flex-col"
-      >
+      <aside v-if="!isHome && currentModule" class="hidden w-56 shrink-0 border-r bg-card md:flex md:flex-col">
         <div class="flex h-14 items-center gap-2 border-b px-4">
           <component :is="currentModule.icon" class="h-5 w-5 text-muted-foreground" />
           <span class="text-sm font-semibold">{{ currentModule.title }}</span>
@@ -144,11 +128,7 @@ async function handleLogout() {
               :key="item.key"
               :to="item.path"
               class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors"
-              :class="
-                route.path === item.path
-                  ? 'bg-muted text-foreground'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              "
+              :class="route.path === item.path ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
             >
               <ChevronRight class="h-4 w-4" />
               {{ item.title }}
