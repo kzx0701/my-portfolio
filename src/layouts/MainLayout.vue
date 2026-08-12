@@ -57,23 +57,23 @@ async function handleLogout() {
         <h1 class="truncate text-base font-semibold">{{ currentTitle }}</h1>
       </div>
 
-      <!-- 用户区：右上角下拉菜单 -->
-      <div class="flex shrink-0 items-center">
+      <!-- 用户区：右上角（头像独立展示，仅用户名可点击下拉） -->
+      <div class="flex shrink-0 items-center gap-2">
+        <Avatar :src="auth.avatarUrl || undefined" :fallback="userInitial" />
         <DropdownMenuRoot>
           <DropdownMenuTrigger
-            class="flex items-center gap-2 rounded-md px-2 py-1.5 outline-none transition-colors hover:bg-accent data-[state=open]:bg-accent"
+            class="flex items-center gap-1.5 rounded-md px-2 py-1.5 outline-none transition-colors hover:bg-accent data-[state=open]:bg-accent"
           >
-            <Avatar :src="auth.avatarUrl || undefined" :fallback="userInitial" />
-            <span class="hidden max-w-[150px] truncate text-sm font-medium md:block">
+            <span class="max-w-[120px] truncate text-sm font-medium">
               {{ auth.username }}
             </span>
-            <ChevronDown class="hidden h-4 w-4 text-muted-foreground md:block" />
+            <ChevronDown class="h-4 w-4 shrink-0 text-muted-foreground" />
           </DropdownMenuTrigger>
 
           <DropdownMenuContent
             align="end"
             :side-offset="6"
-            class="z-50 min-w-[11rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+            class="dropdown-anim z-50 min-w-[11rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
           >
             <DropdownMenuLabel class="px-2 py-1.5">
               <div class="flex flex-col gap-0.5">
@@ -153,3 +153,27 @@ async function handleLogout() {
     <ProfileDialog v-model:open="profileOpen" />
   </div>
 </template>
+
+<style scoped>
+/* 下拉菜单进入动效：淡入 + 下滑 + 轻微缩放（easeOutExpo 丝滑） */
+.dropdown-anim[data-state='open'] {
+  animation: dropdown-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dropdown-anim[data-state='open'] {
+    animation: none;
+  }
+}
+</style>
