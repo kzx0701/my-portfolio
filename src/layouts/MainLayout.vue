@@ -73,7 +73,7 @@ async function handleLogout() {
           <DropdownMenuContent
             align="end"
             :side-offset="6"
-            class="dropdown-anim z-50 min-w-[11rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+            class="z-50 min-w-[11rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2"
           >
             <DropdownMenuLabel class="px-2 py-1.5">
               <div class="flex flex-col gap-0.5">
@@ -153,27 +153,3 @@ async function handleLogout() {
     <ProfileDialog v-model:open="profileOpen" />
   </div>
 </template>
-
-<style scoped>
-/* 下拉菜单进入动效：淡入 + 下滑 + 轻微缩放（easeOutExpo 丝滑） */
-.dropdown-anim[data-state='open'] {
-  animation: dropdown-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes dropdown-in {
-  from {
-    opacity: 0;
-    transform: translateY(-6px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .dropdown-anim[data-state='open'] {
-    animation: none;
-  }
-}
-</style>

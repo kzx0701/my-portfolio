@@ -28,9 +28,11 @@ const props = withDefaults(
 
 const emit = defineEmits<{ 'update:open': [value: boolean] }>()
 
+// 官方 shadcn v4 模板类：translate-x-[-50%]（v4 原生 translate 属性）
+// + tw-animate-css 的 fade/zoom 进出动画（zoom 仅动 scale，与定位不冲突）
 const contentClass = computed(() =>
   cn(
-    'dialog-anim fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-lg border bg-background p-6 shadow-lg',
+    'fixed left-[50%] top-[50%] z-50 w-full max-w-lg translate-x-[-50%] translate-y-[-50%] rounded-lg border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
     props.class,
   ),
 )
@@ -39,7 +41,9 @@ const contentClass = computed(() =>
 <template>
   <DialogRoot :open="open" @update:open="emit('update:open', $event)">
     <DialogPortal>
-      <DialogOverlay class="dialog-overlay-anim fixed inset-0 z-50 bg-black/80" />
+      <DialogOverlay
+        class="fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0"
+      />
       <DialogContent :class="contentClass">
         <div v-if="title || description" class="mb-4">
           <DialogTitle v-if="title" class="text-lg font-semibold">{{ title }}</DialogTitle>
@@ -62,42 +66,3 @@ const contentClass = computed(() =>
     </DialogPortal>
   </DialogRoot>
 </template>
-
-<style scoped>
-/* 弹窗进入动效：淡入 + 缩放上移（easeOutExpo 丝滑）；动画期间 transform 覆盖
-   Tailwind 的 translate 定位，因此 keyframes 需保留 translate(-50%, -50%) */
-.dialog-anim[data-state='open'] {
-  animation: dialog-in 0.24s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.dialog-overlay-anim[data-state='open'] {
-  animation: dialog-fade 0.2s ease-out;
-}
-
-@keyframes dialog-in {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -47%) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-}
-
-@keyframes dialog-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .dialog-anim[data-state='open'],
-  .dialog-overlay-anim[data-state='open'] {
-    animation: none;
-  }
-}
-</style>
