@@ -32,16 +32,16 @@ const today = computed(() =>
 </script>
 
 <template>
-  <!-- 垂直居中：扣除顶栏(3.5rem)与 main 内边距(3rem)，内容超高时自动扩展不裁切 -->
-  <div class="relative mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-5xl flex-col justify-center">
+  <!-- 垂直居中 + 水平居中：扣除顶栏(3.5rem)与 main 内边距(3rem)，内容超高时自动扩展不裁切 -->
+  <div class="relative mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-5xl flex-col items-center justify-center">
     <!-- 顶部氛围光晕（极淡，明暗主题均可） -->
     <div
       class="pointer-events-none absolute -top-32 left-1/2 h-80 w-[38rem] -translate-x-1/2 rounded-full bg-primary/5 blur-3xl"
     />
 
     <div class="relative">
-      <!-- 欢迎区 -->
-      <div class="mb-10">
+      <!-- 欢迎区（水平居中） -->
+      <div class="mb-10 text-center">
         <span
           class="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground"
         >
@@ -61,8 +61,8 @@ const today = computed(() =>
         </p>
       </div>
 
-      <!-- 模块入口卡片 -->
-      <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <!-- 模块入口卡片（w-full 保证在居中容器下撑满宽度，卡片列居中分布） -->
+      <div class="grid w-full gap-5 sm:grid-cols-2 lg:grid-cols-3">
         <RouterLink
           v-for="mod in activeModules"
           :key="mod.key"
