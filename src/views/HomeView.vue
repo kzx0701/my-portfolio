@@ -58,6 +58,10 @@ const today = computed(() =>
           <Card
             class="relative h-full overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg"
           >
+            <!-- 悬停底色：淡品牌渐变（DOM 靠前，后续内容天然绘制在其上） -->
+            <div
+              class="pointer-events-none absolute inset-0 bg-gradient-to-br from-indigo-500/[0.06] to-violet-600/[0.08] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+            />
             <!-- 顶部渐变线（悬停显现） -->
             <div
               class="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-indigo-500 to-violet-600 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
@@ -85,10 +89,13 @@ const today = computed(() =>
               </div>
             </CardHeader>
             <CardFooter class="px-6 pb-6">
-              <span class="inline-flex items-center gap-1.5 text-sm font-medium text-primary">
+              <!-- 胶囊引导：悬停卡片时点亮为品牌渐变 + 白字 -->
+              <span
+                class="inline-flex items-center gap-1.5 rounded-full border border-primary/15 bg-primary/5 px-3.5 py-1.5 text-sm font-medium text-primary transition-all duration-300 group-hover:border-transparent group-hover:bg-gradient-to-r group-hover:from-indigo-500 group-hover:to-violet-600 group-hover:text-white group-hover:shadow-md"
+              >
                 进入模块
                 <ArrowRight
-                  class="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"
+                  class="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5"
                 />
               </span>
             </CardFooter>
