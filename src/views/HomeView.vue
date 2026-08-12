@@ -31,10 +31,25 @@ const today = computed(() =>
 <template>
   <!-- 居中但略偏上：pb-[12vh] 使内容中心上移约 6vh，避免完全垂直居中的偏下感 -->
   <div class="relative mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-5xl flex-col items-center justify-center pb-[12vh]">
-    <!-- 顶部氛围光晕（极淡，明暗主题均可） -->
-    <div
-      class="pointer-events-none absolute -top-32 left-1/2 h-80 w-[38rem] -translate-x-1/2 rounded-full bg-primary/5 blur-3xl"
-    />
+    <!-- 背景装饰层：多色氛围光晕 + 细网格纹理（只装饰背景，明暗主题兼容） -->
+    <div class="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+      <!-- 主光晕：顶部中央（品牌靛蓝） -->
+      <div
+        class="absolute -top-40 left-1/2 h-96 w-[42rem] -translate-x-1/2 rounded-full bg-indigo-500/10 blur-3xl"
+      />
+      <!-- 辅助光晕：左下（紫罗兰） -->
+      <div
+        class="absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-violet-500/[0.08] blur-3xl"
+      />
+      <!-- 辅助光晕：右上（天蓝，点缀冷暖层次） -->
+      <div
+        class="absolute -right-20 top-1/3 h-72 w-72 rounded-full bg-sky-400/[0.06] blur-3xl"
+      />
+      <!-- 细网格纹理：顶部可见、向下渐隐，避免生硬 -->
+      <div
+        class="absolute inset-0 bg-[linear-gradient(to_right,rgba(120,120,135,0.07)_1px,transparent_1px),linear-gradient(to_bottom,rgba(120,120,135,0.07)_1px,transparent_1px)] bg-[size:44px_44px] [mask-image:radial-gradient(ellipse_65%_55%_at_50%_0%,black,transparent)]"
+      />
+    </div>
 
     <div class="relative">
       <!-- 欢迎区（水平居中） -->
