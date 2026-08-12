@@ -88,10 +88,10 @@ const today = computed(() =>
                 </div>
               </div>
             </CardHeader>
-            <CardFooter class="px-6 pb-6">
-              <!-- 胶囊引导：悬停卡片时点亮为品牌渐变 + 白字 -->
+            <CardFooter class="justify-end px-6 pb-6">
+              <!-- 简约入口：低调灰色，悬停卡片时点亮品牌色 + 箭头右移 -->
               <span
-                class="inline-flex items-center gap-1.5 rounded-full border border-primary/15 bg-primary/5 px-3.5 py-1.5 text-sm font-medium text-primary transition-all duration-300 group-hover:border-transparent group-hover:bg-gradient-to-r group-hover:from-indigo-500 group-hover:to-violet-600 group-hover:text-white group-hover:shadow-md"
+                class="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors duration-300 group-hover:text-primary"
               >
                 进入模块
                 <ArrowRight
