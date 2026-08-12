@@ -30,20 +30,21 @@ const today = computed(() =>
 
 <template>
   <!-- 居中但略偏上：pb-[12vh] 使内容中心上移约 6vh，避免完全垂直居中的偏下感 -->
-  <div class="relative mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-5xl flex-col items-center justify-center pb-[12vh]">
+  <!-- isolate 创建独立层叠上下文，保证 -z-10 装饰层不被外层 bg-background 盖住 -->
+  <div class="relative isolate mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-5xl flex-col items-center justify-center pb-[12vh]">
     <!-- 背景装饰层：多色氛围光晕 + 细网格纹理（只装饰背景，明暗主题兼容） -->
     <div class="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
       <!-- 主光晕：顶部中央（品牌靛蓝） -->
       <div
-        class="absolute -top-40 left-1/2 h-96 w-[42rem] -translate-x-1/2 rounded-full bg-indigo-500/10 blur-3xl"
+        class="absolute -top-40 left-1/2 h-96 w-[42rem] -translate-x-1/2 rounded-full bg-indigo-500/15 blur-3xl"
       />
       <!-- 辅助光晕：左下（紫罗兰） -->
       <div
-        class="absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-violet-500/[0.08] blur-3xl"
+        class="absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-violet-500/10 blur-3xl"
       />
       <!-- 辅助光晕：右上（天蓝，点缀冷暖层次） -->
       <div
-        class="absolute -right-20 top-1/3 h-72 w-72 rounded-full bg-sky-400/[0.06] blur-3xl"
+        class="absolute -right-20 top-1/3 h-72 w-72 rounded-full bg-sky-400/[0.08] blur-3xl"
       />
       <!-- 细网格纹理：顶部可见、向下渐隐，避免生硬 -->
       <div
