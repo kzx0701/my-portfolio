@@ -11,6 +11,32 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => !!user.value)
 
+  /** 用户名：优先取 user_metadata.username，回退为邮箱前缀 */
+  const username = computed(
+    () =>
+      (user.value?.user_metadata?.username as string | undefined) ||
+      user.value?.email?.split('@')[0] ||
+      '轩屿',
+  )
+
+  /** 头像 URL：来自 user_metadata.avatar_url */
+  const avatarUrl = computed(
+    () => (user.value?.user_metadata?.avatar_url as string | undefined) || '',
+  )
+
+  /** 更新用户资料（用户名 + 头像），写入 user_metadata */
+  async function updateProfile(profile: { username: string; avatarUrl?: string | null }) {
+    const { data, error } = await supabase.auth.updateUser({
+      data: {
+        username: profile.username.trim() || username.value,
+        avatar_url: profile.avatarUrl ?? null,
+      },
+    })
+    if (error) throw error
+    user.value = data.user
+    return data
+  }
+
   async function fetchSession() {
     loading.value = true
     try {
@@ -62,10 +88,13 @@ export const useAuthStore = defineStore('auth', () => {
     loading,
     isAuthenticated,
     initialized,
+    username,
+    avatarUrl,
     fetchSession,
     signInWithEmail,
     signUp,
     signOut,
+    updateProfile,
     init,
   }
 })

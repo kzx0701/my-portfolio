@@ -63,3 +63,26 @@ create policy "orders_delete_own" on public.orders
 
 -- ---------- 5. 权限：仅授予登录用户（authenticated）表权限，anon 保持无权限（最小权限原则，RLS 兜底） ----------
 grant select, insert, update, delete on table public.orders to authenticated;
+
+-- ============================================================
+-- 头像存储（Supabase Storage）
+-- 说明：avatar_url 存于 auth.users.user_metadata；图片文件存 Storage
+-- ============================================================
+
+-- ---------- 6. 创建公开的 avatars bucket（图片经公开 URL 访问） ----------
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do nothing;
+
+-- ---------- 7. avatars RLS：每个用户只能读写自己目录（avatars/{user_id}/...）下的文件 ----------
+drop policy if exists "avatars_own" on storage.objects;
+create policy "avatars_own" on storage.objects
+  for all to authenticated
+  using (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  )
+  with check (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );

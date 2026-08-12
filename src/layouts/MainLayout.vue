@@ -1,14 +1,25 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
-import { computed } from 'vue'
-import { ArrowLeft, ChevronRight, LogOut } from '@lucide/vue'
-import { Avatar, Button, Separator } from '@/components/ui'
+import { computed, ref } from 'vue'
+import { ArrowLeft, ChevronDown, ChevronRight, LogOut, UserRound } from '@lucide/vue'
+import {
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRoot,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from 'reka-ui'
+import { Avatar, Separator } from '@/components/ui'
+import ProfileDialog from '@/components/ProfileDialog.vue'
 import { activeModules } from '@/modules/registry'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+
+const profileOpen = ref(false)
 
 const currentTitle = computed(() => (route.meta.title as string) ?? '工作台')
 
@@ -22,10 +33,7 @@ const currentModule = computed(() =>
   ),
 )
 
-const userInitial = computed(() => {
-  const email = auth.user?.email ?? ''
-  return email ? email.charAt(0).toUpperCase() : '客'
-})
+const userInitial = computed(() => auth.username.charAt(0).toUpperCase() || '客')
 
 const userEmail = computed(() => auth.user?.email ?? '')
 
@@ -49,15 +57,48 @@ async function handleLogout() {
         <h1 class="truncate text-base font-semibold">{{ currentTitle }}</h1>
       </div>
 
-      <!-- 用户区：右上角 -->
-      <div class="flex shrink-0 items-center gap-2 sm:gap-3">
-        <Avatar :fallback="userInitial" />
-        <span class="hidden max-w-[180px] truncate text-sm font-medium md:block">
-          {{ userEmail }}
-        </span>
-        <Button variant="ghost" size="icon" title="退出登录" @click="handleLogout">
-          <LogOut class="h-4 w-4" />
-        </Button>
+      <!-- 用户区：右上角下拉菜单 -->
+      <div class="flex shrink-0 items-center">
+        <DropdownMenuRoot>
+          <DropdownMenuTrigger
+            class="flex items-center gap-2 rounded-md px-2 py-1.5 outline-none transition-colors hover:bg-accent data-[state=open]:bg-accent"
+          >
+            <Avatar :src="auth.avatarUrl || undefined" :fallback="userInitial" />
+            <span class="hidden max-w-[150px] truncate text-sm font-medium md:block">
+              {{ auth.username }}
+            </span>
+            <ChevronDown class="hidden h-4 w-4 text-muted-foreground md:block" />
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent
+            align="end"
+            :side-offset="6"
+            class="z-50 min-w-[11rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+          >
+            <DropdownMenuLabel class="px-2 py-1.5">
+              <div class="flex flex-col gap-0.5">
+                <span class="text-sm font-medium">{{ auth.username }}</span>
+                <span class="text-xs font-normal text-muted-foreground">{{ userEmail }}</span>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator class="-mx-1 my-1 h-px bg-muted" />
+            <DropdownMenuItem
+              class="flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground"
+              @select="profileOpen = true"
+            >
+              <UserRound class="h-4 w-4" />
+              编辑资料
+            </DropdownMenuItem>
+            <DropdownMenuSeparator class="-mx-1 my-1 h-px bg-muted" />
+            <DropdownMenuItem
+              class="flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive outline-none transition-colors focus:bg-destructive/10 focus:text-destructive"
+              @select="handleLogout"
+            >
+              <LogOut class="h-4 w-4" />
+              退出登录
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenuRoot>
       </div>
     </header>
 
@@ -107,5 +148,8 @@ async function handleLogout() {
         <RouterView />
       </main>
     </div>
+
+    <!-- 编辑资料弹窗 -->
+    <ProfileDialog v-model:open="profileOpen" />
   </div>
 </template>

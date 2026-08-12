@@ -8,11 +8,8 @@ import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 
-/** 用户名：取邮箱 @ 前缀作为昵称 */
-const userName = computed(() => {
-  const email = auth.user?.email ?? ''
-  return email.split('@')[0] || '轩屿'
-})
+/** 用户名：优先取用户自定义用户名，回退邮箱前缀 */
+const userName = computed(() => auth.username)
 
 /** 按时段问候 */
 const greeting = computed(() => {
