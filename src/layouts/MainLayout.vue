@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { computed } from 'vue'
-import { LogOut, ChevronRight } from '@lucide/vue'
-import { Button } from '@/components/ui'
-import { Avatar } from '@/components/ui'
-import { Separator } from '@/components/ui'
+import { ArrowLeft, ChevronRight, LogOut } from '@lucide/vue'
+import { Avatar, Button, Separator } from '@/components/ui'
 import { activeModules } from '@/modules/registry'
 import { useAuthStore } from '@/stores/auth'
 
@@ -13,6 +11,16 @@ const router = useRouter()
 const auth = useAuthStore()
 
 const currentTitle = computed(() => (route.meta.title as string) ?? '工作台')
+
+/** 是否处于首页（工作台总览，此时不显示侧边栏） */
+const isHome = computed(() => route.path === '/')
+
+/** 当前所在模块（进入模块页后侧边栏显示该模块的菜单） */
+const currentModule = computed(() =>
+  activeModules.find(
+    (m) => route.path === m.path || route.path.startsWith(`${m.path}/`),
+  ),
+)
 
 const userInitial = computed(() => {
   const email = auth.user?.email ?? ''
@@ -32,70 +40,70 @@ async function handleLogout() {
 </script>
 
 <template>
-  <div class="flex min-h-screen w-full bg-background">
-    <!-- 侧边栏 -->
-    <aside class="hidden w-64 shrink-0 border-r bg-card md:flex md:flex-col">
-      <div class="flex h-14 items-center gap-2 border-b px-6">
+  <div class="flex min-h-screen w-full flex-col bg-background">
+    <!-- 顶栏（全宽） -->
+    <header class="flex h-14 shrink-0 items-center justify-between border-b px-4 sm:px-6">
+      <div class="flex min-w-0 items-center gap-3">
         <span class="text-lg font-bold tracking-tight">轩屿工作台</span>
+        <Separator orientation="vertical" class="h-5 hidden sm:block" />
+        <h1 class="truncate text-base font-semibold">{{ currentTitle }}</h1>
       </div>
 
-      <nav class="flex-1 space-y-1 p-4">
-        <RouterLink
-          to="/"
-          class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors"
-          :class="
-            route.path === '/'
-              ? 'bg-muted text-foreground'
-              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-          "
-        >
-          <ChevronRight class="h-4 w-4" />
-          工作台
-        </RouterLink>
+      <!-- 用户区：右上角 -->
+      <div class="flex shrink-0 items-center gap-2 sm:gap-3">
+        <Avatar :fallback="userInitial" />
+        <span class="hidden max-w-[180px] truncate text-sm font-medium md:block">
+          {{ userEmail }}
+        </span>
+        <Button variant="ghost" size="icon" title="退出登录" @click="handleLogout">
+          <LogOut class="h-4 w-4" />
+        </Button>
+      </div>
+    </header>
 
-        <Separator class="my-3" />
+    <div class="flex min-h-0 flex-1">
+      <!-- 侧边栏：仅进入模块后显示（渲染当前模块的菜单） -->
+      <aside
+        v-if="!isHome && currentModule"
+        class="hidden w-56 shrink-0 border-r bg-card md:flex md:flex-col"
+      >
+        <div class="flex h-14 items-center gap-2 border-b px-4">
+          <component :is="currentModule.icon" class="h-5 w-5 text-muted-foreground" />
+          <span class="text-sm font-semibold">{{ currentModule.title }}</span>
+        </div>
 
-        <template v-for="mod in activeModules" :key="mod.key">
+        <nav class="flex-1 space-y-1 p-3">
+          <template v-if="currentModule.children && currentModule.children.length">
+            <RouterLink
+              v-for="item in currentModule.children"
+              :key="item.key"
+              :to="item.path"
+              class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors"
+              :class="
+                route.path === item.path
+                  ? 'bg-muted text-foreground'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              "
+            >
+              <ChevronRight class="h-4 w-4" />
+              {{ item.title }}
+            </RouterLink>
+          </template>
+        </nav>
+
+        <div class="border-t p-3">
           <RouterLink
-            :to="mod.path"
-            class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors"
-            :class="
-              route.path.startsWith(mod.path)
-                ? 'bg-muted text-foreground'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-            "
+            to="/"
+            class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
-            <component :is="mod.icon" class="h-4 w-4" />
-            {{ mod.title }}
+            <ArrowLeft class="h-4 w-4" />
+            返回工作台
           </RouterLink>
-        </template>
-      </nav>
-
-      <div class="border-t p-4">
-        <div class="flex items-center gap-3">
-          <Avatar :fallback="userInitial" />
-          <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-medium">{{ userEmail }}</p>
-          </div>
-          <Button variant="ghost" size="icon" @click="handleLogout" title="退出登录">
-            <LogOut class="h-4 w-4" />
-          </Button>
         </div>
-      </div>
-    </aside>
+      </aside>
 
-    <!-- 主内容区 -->
-    <div class="flex min-w-0 flex-1 flex-col">
-      <header class="flex h-14 items-center justify-between border-b px-6">
-        <h1 class="text-base font-semibold">{{ currentTitle }}</h1>
-        <div class="flex items-center gap-2 md:hidden">
-          <Button variant="ghost" size="icon" @click="handleLogout">
-            <LogOut class="h-4 w-4" />
-          </Button>
-        </div>
-      </header>
-
-      <main class="flex-1 overflow-auto p-6">
+      <!-- 主内容区 -->
+      <main class="min-w-0 flex-1 overflow-auto p-6">
         <RouterView />
       </main>
     </div>

@@ -6,9 +6,18 @@ import { ClipboardList, FileText, FolderKanban, LayoutDashboard } from '@lucide/
  *
  * 工作台所有模块统一在这里登记：
  * - 模块总入口页（首页）会遍历这里渲染入口卡片
- * - 侧边栏会遍历这里渲染导航菜单
+ * - 进入模块后，侧边栏会遍历当前模块的 children 渲染模块内菜单
  * - 后续新增模块：只需在此增加一项 + 在 router 中挂载对应路由，其余自动生效
  */
+export interface ModuleMenuItem {
+  /** 菜单项唯一标识 */
+  key: string
+  /** 菜单项名称 */
+  title: string
+  /** 子页面路径（必须以 / 开头） */
+  path: string
+}
+
 export interface ModuleMeta {
   /** 模块唯一标识（用于路由与 key） */
   key: string
@@ -20,6 +29,8 @@ export interface ModuleMeta {
   path: string
   /** 图标组件 */
   icon: Component
+  /** 模块内菜单（子页面），进入模块后显示在侧边栏 */
+  children?: ModuleMenuItem[]
   /** 是否显示在入口页 / 侧边栏 */
   enabled?: boolean
   /** 排序权重，越小越靠前 */
@@ -31,12 +42,16 @@ export interface ModuleMeta {
 export const modules: ModuleMeta[] = [
   {
     key: 'orders',
-    title: '接单平台',
+    title: '个人接单',
     description: '管理个人接单项目，跟踪报价、进度、回款与交付。',
     path: '/orders',
     icon: ClipboardList,
     order: 1,
     active: true,
+    children: [
+      { key: 'orders-list', title: '接单列表', path: '/orders' },
+      { key: 'orders-stats', title: '数据统计', path: '/orders/stats' },
+    ],
   },
   // ---- 以下为预留模块，后续确定后开启（enabled: true）即可 ----
   {
