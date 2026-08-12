@@ -42,7 +42,7 @@ export interface ModuleMeta {
 export const modules: ModuleMeta[] = [
   {
     key: 'orders',
-    title: '个人接单',
+    title: '接单中心',
     description: '管理个人接单项目，跟踪报价、进度、回款与交付。',
     path: '/orders',
     icon: ClipboardList,

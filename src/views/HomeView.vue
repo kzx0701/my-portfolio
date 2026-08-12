@@ -1,51 +1,115 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
-import { ArrowRight } from '@lucide/vue'
+import { computed } from 'vue'
+import { ArrowRight, Sparkles } from '@lucide/vue'
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui'
 import { activeModules } from '@/modules/registry'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
-const userName = auth.user?.email ?? '轩屿'
+
+/** 用户名：取邮箱 @ 前缀作为昵称 */
+const userName = computed(() => {
+  const email = auth.user?.email ?? ''
+  return email.split('@')[0] || '轩屿'
+})
+
+/** 按时段问候 */
+const greeting = computed(() => {
+  const h = new Date().getHours()
+  if (h < 5) return '夜深了'
+  if (h < 12) return '早上好'
+  if (h < 18) return '下午好'
+  return '晚上好'
+})
+
+/** 今天的日期文案 */
+const today = computed(() =>
+  new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' }).format(
+    new Date(),
+  ),
+)
 </script>
 
 <template>
-  <div class="mx-auto max-w-5xl">
-    <div class="mb-8">
-      <h2 class="text-2xl font-bold tracking-tight">你好，{{ userName }}</h2>
-      <p class="mt-1 text-muted-foreground">选择要进入的工作台模块。</p>
-    </div>
-
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <RouterLink
-        v-for="mod in activeModules"
-        :key="mod.key"
-        :to="mod.path"
-        class="group block transition-transform hover:-translate-y-0.5"
-      >
-        <Card class="h-full transition-shadow hover:shadow-md">
-          <CardHeader>
-            <div class="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-              <component :is="mod.icon" class="h-5 w-5" />
-            </div>
-            <CardTitle>{{ mod.title }}</CardTitle>
-            <CardDescription>{{ mod.description }}</CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <span class="inline-flex items-center gap-1 text-sm font-medium text-primary">
-              进入模块
-              <ArrowRight class="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </span>
-          </CardFooter>
-        </Card>
-      </RouterLink>
-    </div>
-
+  <div class="relative mx-auto max-w-5xl">
+    <!-- 顶部氛围光晕（极淡，明暗主题均可） -->
     <div
-      v-if="activeModules.length === 0"
-      class="rounded-lg border border-dashed p-8 text-center text-muted-foreground"
-    >
-      暂无可用模块，请在 <code class="text-xs">src/modules/registry.ts</code> 中开启。
+      class="pointer-events-none absolute -top-32 left-1/2 h-80 w-[38rem] -translate-x-1/2 rounded-full bg-primary/5 blur-3xl"
+    />
+
+    <div class="relative">
+      <!-- 欢迎区 -->
+      <div class="mb-10">
+        <span
+          class="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground"
+        >
+          <Sparkles class="h-3.5 w-3.5" />
+          工作台总览
+        </span>
+        <h2 class="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
+          {{ greeting }}，
+          <span
+            class="bg-gradient-to-r from-indigo-500 to-violet-600 bg-clip-text text-transparent"
+          >
+            {{ userName }}
+          </span>
+        </h2>
+        <p class="mt-2 text-sm text-muted-foreground sm:text-base">
+          今天是 {{ today }}，选择要进入的工作台模块。
+        </p>
+      </div>
+
+      <!-- 模块入口卡片 -->
+      <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <RouterLink
+          v-for="mod in activeModules"
+          :key="mod.key"
+          :to="mod.path"
+          class="group block h-full"
+        >
+          <Card
+            class="relative h-full overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg"
+          >
+            <!-- 顶部渐变线（悬停显现） -->
+            <div
+              class="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-indigo-500 to-violet-600 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+            />
+            <!-- 角落水印图标（装饰） -->
+            <component
+              :is="mod.icon"
+              class="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rotate-12 text-foreground opacity-[0.04]"
+            />
+
+            <CardHeader class="p-6">
+              <div
+                class="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25 transition-transform duration-300 group-hover:scale-105"
+              >
+                <component :is="mod.icon" class="h-6 w-6" />
+              </div>
+              <CardTitle class="text-base font-semibold">{{ mod.title }}</CardTitle>
+              <CardDescription class="mt-1.5 text-sm leading-relaxed">
+                {{ mod.description }}
+              </CardDescription>
+            </CardHeader>
+            <CardFooter class="px-6 pb-6">
+              <span class="inline-flex items-center gap-1.5 text-sm font-medium text-primary">
+                进入模块
+                <ArrowRight
+                  class="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"
+                />
+              </span>
+            </CardFooter>
+          </Card>
+        </RouterLink>
+      </div>
+
+      <div
+        v-if="activeModules.length === 0"
+        class="rounded-lg border border-dashed p-8 text-center text-muted-foreground"
+      >
+        暂无可用模块，请在 <code class="text-xs">src/modules/registry.ts</code> 中开启。
+      </div>
     </div>
   </div>
 </template>
