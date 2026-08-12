@@ -5,6 +5,7 @@ import { ArrowRight } from '@lucide/vue'
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui'
 import { activeModules } from '@/modules/registry'
 import { useAuthStore } from '@/stores/auth'
+import logoImgUrl from '@/assets/images/logo_img.png'
 
 const auth = useAuthStore()
 
@@ -34,12 +35,19 @@ const today = computed(() =>
     <div>
       <!-- 欢迎区（水平居中） -->
       <div class="mb-10 text-center">
-        <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">
-          {{ greeting }}，
-          <span
-            class="bg-gradient-to-r from-indigo-500 to-violet-600 bg-clip-text text-transparent"
-          >
-            {{ userName }}
+        <h2 class="flex items-center justify-center gap-3 text-3xl font-bold tracking-tight sm:text-4xl">
+          <img
+            :src="logoImgUrl"
+            alt=""
+            class="h-20 w-auto shrink-0 drop-shadow-sm sm:h-24"
+          />
+          <span>
+            {{ greeting }}，
+            <span
+              class="bg-gradient-to-r from-sky-500 to-teal-400 bg-clip-text text-transparent"
+            >
+              {{ userName }}
+            </span>
           </span>
         </h2>
         <p class="mt-2 text-sm text-muted-foreground sm:text-base">
@@ -60,23 +68,23 @@ const today = computed(() =>
           >
             <!-- 悬停底色：淡品牌渐变（DOM 靠前，后续内容天然绘制在其上） -->
             <div
-              class="pointer-events-none absolute inset-0 bg-gradient-to-br from-indigo-500/[0.06] to-violet-600/[0.08] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+              class="pointer-events-none absolute inset-0 bg-gradient-to-br from-sky-400/[0.06] to-teal-500/[0.08] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
             />
             <!-- 顶部渐变线（悬停显现） -->
             <div
-              class="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-indigo-500 to-violet-600 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+              class="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-sky-400 to-teal-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
             />
             <!-- 角落水印图标（悬停：放大/旋转回旋/滑入/提亮/染品牌色，弹性缓动） -->
             <component
               :is="mod.icon"
-              class="pointer-events-none absolute -right-4 -top-4 h-24 w-24 origin-top-right rotate-12 text-foreground opacity-[0.04] transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:translate-x-1.5 group-hover:translate-y-1.5 group-hover:rotate-[-6deg] group-hover:scale-125 group-hover:opacity-[0.16] group-hover:text-indigo-500/40"
+              class="pointer-events-none absolute -right-4 -top-4 h-24 w-24 origin-top-right rotate-12 text-foreground opacity-[0.04] transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:translate-x-1.5 group-hover:translate-y-1.5 group-hover:rotate-[-6deg] group-hover:scale-125 group-hover:opacity-[0.16] group-hover:text-sky-500/40"
             />
 
             <CardHeader class="p-6">
               <!-- 横排：左侧渐变小 logo + 右侧标题/描述 -->
               <div class="flex items-start gap-4">
                 <div
-                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/25 transition-transform duration-300 group-hover:scale-105"
+                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-sky-400 to-teal-500 text-white shadow-md shadow-sky-500/25 transition-transform duration-300 group-hover:scale-105"
                   :style="{ viewTransitionName: `vt-${mod.key}` }"
                 >
                   <component :is="mod.icon" class="h-5 w-5" />

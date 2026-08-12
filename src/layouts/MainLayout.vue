@@ -14,6 +14,7 @@ import { Avatar, Separator } from "@/components/ui";
 import ProfileDialog from "@/components/ProfileDialog.vue";
 import { activeModules } from "@/modules/registry";
 import { useAuthStore } from "@/stores/auth";
+import logoUrl from "@/assets/images/logo.png";
 
 const route = useRoute();
 const router = useRouter();
@@ -25,13 +26,27 @@ const profileOpen = ref(false);
 const supportsViewTransition =
   typeof document !== "undefined" && !!document.startViewTransition;
 
-const currentTitle = computed(() => (route.meta.title as string) ?? "工作台");
-
 /** 是否处于首页（工作台总览，此时不显示侧边栏） */
 const isHome = computed(() => route.path === "/");
 
 /** 当前所在模块（进入模块页后侧边栏显示该模块的菜单） */
 const currentModule = computed(() => activeModules.find((m) => route.path === m.path || route.path.startsWith(`${m.path}/`)));
+
+/** 顶栏标题：首页显示"工作台"，模块内固定显示模块名（不随子菜单标题变化） */
+const currentTitle = computed(() =>
+  isHome.value ? "工作台" : (currentModule.value?.title ?? "工作台"),
+);
+
+/** 面包屑：模块页显示「工作台 / 模块名 / 当前页」，首页不显示 */
+const moduleCrumbs = computed(() => {
+  if (!currentModule.value) return [];
+  const crumbs = [{ title: currentModule.value.title, path: currentModule.value.path }];
+  const title = route.meta.title as string | undefined;
+  if (title && title !== currentModule.value.title) {
+    crumbs.push({ title, path: route.path });
+  }
+  return crumbs;
+});
 
 const userInitial = computed(() => auth.username.charAt(0).toUpperCase() || "客");
 
@@ -51,23 +66,45 @@ async function handleLogout() {
   <!-- relative isolate：创建层叠上下文，保证 -z-10 装饰层在 bg-background 之上、内容之下 -->
   <div class="relative isolate flex min-h-screen w-full flex-col bg-background">
     <!-- 首页全屏背景装饰（仅首页显示，布局层职责；覆盖全宽无白边） -->
+    <!-- 海岛风格：天空→海面纵向渐变 + 暖阳 + 白云 + 底部海浪，替代原紫色光晕 -->
     <div v-if="isHome" class="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-      <!-- 主光晕：顶部中央（品牌靛蓝） -->
-      <div class="absolute -top-40 left-1/2 h-96 w-[46rem] -translate-x-1/2 rounded-full bg-indigo-500/25 blur-3xl" />
-      <!-- 辅助光晕：左下（紫罗兰） -->
-      <div class="absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-violet-500/15 blur-3xl" />
-      <!-- 辅助光晕：右上（天蓝，点缀冷暖层次） -->
-      <div class="absolute -right-20 top-1/3 h-72 w-72 rounded-full bg-sky-400/10 blur-3xl" />
-      <!-- 细网格纹理：顶部可见、向下渐隐，避免生硬 -->
+      <!-- 天空→海面纵向渐变（海岛氛围基底，低透明度） -->
+      <div class="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(125,211,252,0.16),rgba(125,211,252,0.05)_40%,rgba(45,212,191,0.06)_70%,rgba(45,212,191,0.12))]" />
+      <!-- 暖阳：右上（amber 阳光色） -->
+      <div class="absolute -right-24 -top-16 h-80 w-80 rounded-full bg-amber-300/20 blur-3xl" />
+      <!-- 主光晕：顶部中央（天空蓝） -->
+      <div class="absolute -top-40 left-1/2 h-96 w-[46rem] -translate-x-1/2 rounded-full bg-sky-400/20 blur-3xl" />
+      <!-- 辅助光晕：左下（海绿） -->
+      <div class="absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-teal-400/15 blur-3xl" />
+      <!-- 白云（轻量 SVG，天蓝色云朵，明暗主题均可见） -->
+      <svg class="absolute left-[10%] top-16 h-10 w-28 text-sky-100/80" viewBox="0 0 200 60" fill="currentColor" aria-hidden="true">
+        <ellipse cx="70" cy="45" rx="60" ry="18" />
+        <ellipse cx="100" cy="30" rx="45" ry="20" />
+        <ellipse cx="135" cy="45" rx="55" ry="16" />
+      </svg>
+      <svg class="absolute right-[16%] top-28 h-7 w-20 text-sky-100/60" viewBox="0 0 200 60" fill="currentColor" aria-hidden="true">
+        <ellipse cx="70" cy="45" rx="60" ry="18" />
+        <ellipse cx="100" cy="30" rx="45" ry="20" />
+        <ellipse cx="135" cy="45" rx="55" ry="16" />
+      </svg>
+      <!-- 底部海浪（低透明青色波浪线，呼应海岛插画） -->
+      <svg class="absolute inset-x-0 bottom-0 h-16 w-full" viewBox="0 0 1440 64" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0,40 C160,64 320,8 480,24 C640,40 800,0 960,16 C1120,32 1280,8 1440,28 L1440,64 L0,64 Z" fill="rgba(45,212,191,0.14)" />
+      </svg>
+      <!-- 细网格纹理：顶部可见、向下渐隐（中性灰，比原 0.07 更淡） -->
       <div
-        class="absolute inset-0 bg-[linear-gradient(to_right,rgba(120,120,135,0.07)_1px,transparent_1px),linear-gradient(to_bottom,rgba(120,120,135,0.07)_1px,transparent_1px)] bg-[size:44px_44px] [mask-image:radial-gradient(ellipse_65%_55%_at_50%_0%,black,transparent)]"
+        class="absolute inset-0 bg-[linear-gradient(to_right,rgba(120,120,135,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(120,120,135,0.05)_1px,transparent_1px)] bg-[size:44px_44px] [mask-image:radial-gradient(ellipse_65%_55%_at_50%_0%,black,transparent)]"
       />
     </div>
 
     <!-- 顶栏（全宽） -->
     <header class="flex h-14 shrink-0 items-center justify-between border-b px-4 sm:px-6">
       <div class="flex min-w-0 items-center gap-3">
-        <span class="text-lg font-bold tracking-tight">轩屿</span>
+        <img
+          :src="logoUrl"
+          alt="轩屿"
+          class="h-11 w-auto shrink-0 object-contain"
+        />
         <Separator orientation="vertical" class="h-5 hidden sm:block" />
         <h1 class="truncate text-base font-semibold">{{ currentTitle }}</h1>
       </div>
@@ -134,7 +171,7 @@ async function handleLogout() {
               class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors"
               :class="route.path === item.path ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
             >
-              <ChevronRight class="h-4 w-4" />
+              <component :is="item.icon" class="h-4 w-4 shrink-0" />
               {{ item.title }}
             </RouterLink>
           </template>
@@ -153,6 +190,26 @@ async function handleLogout() {
 
       <!-- 主内容区：VT 支持时由 View Transitions API 过渡，否则用 Vue Transition（fade）降级 -->
       <main class="min-w-0 flex-1 overflow-auto p-6">
+        <!-- 面包屑（仅模块页显示，与页面内容容器同宽对齐） -->
+        <nav v-if="!isHome" class="mx-auto mb-4 flex max-w-6xl items-center gap-1.5 text-sm" aria-label="面包屑">
+          <RouterLink to="/" class="text-muted-foreground transition-colors hover:text-foreground">
+            工作台
+          </RouterLink>
+          <template v-for="(crumb, i) in moduleCrumbs" :key="crumb.title">
+            <ChevronRight class="h-3.5 w-3.5 text-muted-foreground/50" />
+            <RouterLink
+              v-if="i < moduleCrumbs.length - 1"
+              :to="crumb.path"
+              class="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {{ crumb.title }}
+            </RouterLink>
+            <span v-else class="font-medium text-foreground" aria-current="page">
+              {{ crumb.title }}
+            </span>
+          </template>
+        </nav>
+
         <RouterView v-slot="{ Component }">
           <Transition v-if="!supportsViewTransition" name="page" mode="out-in">
             <component :is="Component" />

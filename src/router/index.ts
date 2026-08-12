@@ -22,6 +22,12 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'orders',
         name: 'orders',
+        component: () => import('@/views/orders/OrdersDashboardView.vue'),
+        meta: { title: '仪表盘' },
+      },
+      {
+        path: 'orders/list',
+        name: 'orders-list',
         component: () => import('@/views/orders/OrdersView.vue'),
         meta: { title: '接单列表' },
       },
@@ -70,8 +76,22 @@ router.push = ((to: Parameters<typeof router.push>[0]) => {
 }) as typeof router.push
 
 // 全局路由守卫：需要登录的页面未登录则跳转登录页
-router.beforeEach(async (to) => {
+router.beforeEach(async (to, from) => {
   const auth = useAuthStore()
+
+  // 同一模块内切换菜单（如 仪表盘→接单列表）：禁用整页 VT root 动画，避免整页缩放位移造成的视觉抖动
+  // （仅对 root 快照生效，共享元素 vt-* 的 morphing 不受影响；首页↔模块间仍保留原过渡）
+  const fromSeg = from.path.split('/')[1]
+  const toSeg = to.path.split('/')[1]
+  const sameModule =
+    from.path !== '/' &&
+    to.path !== '/' &&
+    fromSeg !== undefined &&
+    toSeg !== undefined &&
+    fromSeg === toSeg
+  if (typeof document !== 'undefined') {
+    document.documentElement.classList.toggle('no-page-vt', sameModule)
+  }
 
   // 首次进入时确保会话已初始化
   if (!auth.initialized) {

@@ -139,6 +139,13 @@
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* 模块内菜单切换：禁用整页 root 快照动画（由 router 守卫按需添加 no-page-vt），
+   避免顶栏/侧边栏/内容整页缩放位移造成的视觉抖动；共享元素 vt-* morphing 仍保留 */
+.no-page-vt::view-transition-old(root),
+.no-page-vt::view-transition-new(root) {
+  animation: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
   ::view-transition-old(*),

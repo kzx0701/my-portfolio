@@ -1,5 +1,12 @@
 import type { Component } from 'vue'
-import { ClipboardList, FileText, FolderKanban, LayoutDashboard } from '@lucide/vue'
+import {
+  BarChart3,
+  ClipboardList,
+  FileText,
+  FolderKanban,
+  LayoutDashboard,
+  ListChecks,
+} from '@lucide/vue'
 
 /**
  * 模块注册表（配置驱动）
@@ -16,6 +23,8 @@ export interface ModuleMenuItem {
   title: string
   /** 子页面路径（必须以 / 开头） */
   path: string
+  /** 菜单项图标 */
+  icon: Component
 }
 
 export interface ModuleMeta {
@@ -49,8 +58,9 @@ export const modules: ModuleMeta[] = [
     order: 1,
     active: true,
     children: [
-      { key: 'orders-list', title: '接单列表', path: '/orders' },
-      { key: 'orders-stats', title: '数据统计', path: '/orders/stats' },
+      { key: 'orders-dashboard', title: '仪表盘', path: '/orders', icon: LayoutDashboard },
+      { key: 'orders-list', title: '接单列表', path: '/orders/list', icon: ListChecks },
+      { key: 'orders-stats', title: '数据统计', path: '/orders/stats', icon: BarChart3 },
     ],
   },
   // ---- 以下为预留模块，后续确定后开启（enabled: true）即可 ----

@@ -180,7 +180,7 @@ const progressOption = computed<EChartsCoreOption>(() => ({
       <!-- 标题区（logo 与首页卡片同 viewTransitionName，实现 VT 共享元素 morphing） -->
       <div class="flex items-center gap-3">
         <div
-          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/25"
+          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-sky-400 to-teal-500 text-white shadow-md shadow-sky-500/25"
           :style="{ viewTransitionName: 'vt-orders' }"
         >
           <ClipboardList class="h-5 w-5" />
@@ -191,7 +191,7 @@ const progressOption = computed<EChartsCoreOption>(() => ({
         </div>
       </div>
       <RouterLink
-        to="/orders"
+        to="/orders/list"
         class="inline-flex shrink-0 items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
       >
         <ArrowLeft class="h-4 w-4" />

@@ -8,6 +8,8 @@ export const useOrdersStore = defineStore('orders', () => {
   const orders = ref<Order[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  /** 是否已成功加载过数据（首次加载显示骨架屏，之后切换菜单静默刷新，避免骨架屏反复闪现） */
+  const hasLoaded = ref(false)
 
   const stats = computed(() => {
     const active = orders.value.filter(
@@ -24,7 +26,7 @@ export const useOrdersStore = defineStore('orders', () => {
   async function fetchOrders() {
     const auth = useAuthStore()
     if (!auth.user) return
-    loading.value = true
+    if (!hasLoaded.value) loading.value = true
     error.value = null
     try {
       const { data, error: err } = await supabase
@@ -34,6 +36,7 @@ export const useOrdersStore = defineStore('orders', () => {
         .order('created_at', { ascending: false })
       if (err) throw err
       orders.value = data ?? []
+      hasLoaded.value = true
     } catch (e: any) {
       error.value = e?.message ?? '加载订单失败'
       console.error('fetchOrders error:', e)
