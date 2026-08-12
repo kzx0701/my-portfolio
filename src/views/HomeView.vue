@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import { computed } from 'vue'
-import { ArrowRight, Sparkles } from '@lucide/vue'
+import { ArrowRight } from '@lucide/vue'
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui'
 import { activeModules } from '@/modules/registry'
 import { useAuthStore } from '@/stores/auth'
@@ -32,8 +32,8 @@ const today = computed(() =>
 </script>
 
 <template>
-  <!-- 居中但略偏上：pb-[8vh] 使内容中心上移约 4vh，避免完全垂直居中的偏下感 -->
-  <div class="relative mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-5xl flex-col items-center justify-center pb-[8vh]">
+  <!-- 居中但略偏上：pb-[12vh] 使内容中心上移约 6vh，避免完全垂直居中的偏下感 -->
+  <div class="relative mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-5xl flex-col items-center justify-center pb-[12vh]">
     <!-- 顶部氛围光晕（极淡，明暗主题均可） -->
     <div
       class="pointer-events-none absolute -top-32 left-1/2 h-80 w-[38rem] -translate-x-1/2 rounded-full bg-primary/5 blur-3xl"
@@ -42,13 +42,7 @@ const today = computed(() =>
     <div class="relative">
       <!-- 欢迎区（水平居中） -->
       <div class="mb-10 text-center">
-        <span
-          class="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground"
-        >
-          <Sparkles class="h-3.5 w-3.5" />
-          工作台总览
-        </span>
-        <h2 class="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
+        <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">
           {{ greeting }}，
           <span
             class="bg-gradient-to-r from-indigo-500 to-violet-600 bg-clip-text text-transparent"
