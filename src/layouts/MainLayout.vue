@@ -102,7 +102,7 @@ async function handleLogout() {
       <div class="flex min-w-0 items-center gap-3">
         <RouterLink
           to="/"
-          class="shrink-0 rounded-md transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          class="shrink-0 transition-opacity hover:opacity-80"
           aria-label="返回工作台"
         >
           <img
