@@ -50,13 +50,23 @@ const router = createRouter({
 // 浏览器等待导航完成（DOM 更新）后捕获新状态做快照过渡；
 // 不支持的浏览器静默降级为直接导航（无动画，优雅降级）。
 const originalPush = router.push.bind(router)
+
+/** 导航完成后重置主滚动容器（页面切换回到顶部，规范 SPA 行为） */
+function resetMainScroll() {
+  document.querySelector('main')?.scrollTo(0, 0)
+}
+
 router.push = ((to: Parameters<typeof router.push>[0]) => {
   if (typeof document !== 'undefined' && document.startViewTransition) {
-    return document.startViewTransition(() => originalPush(to)) as unknown as ReturnType<
-      typeof router.push
-    >
+    return document.startViewTransition(async () => {
+      await originalPush(to)
+      resetMainScroll()
+    }) as unknown as ReturnType<typeof router.push>
   }
-  return originalPush(to)
+  return originalPush(to).then((result) => {
+    resetMainScroll()
+    return result
+  })
 }) as typeof router.push
 
 // 全局路由守卫：需要登录的页面未登录则跳转登录页

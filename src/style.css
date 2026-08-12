@@ -115,10 +115,10 @@
 /* ---- View Transitions API：路由页面快照过渡（浏览器支持时接管页面切换） ---- */
 /* 旧页面：轻微缩小 + 淡出；新页面：淡入 + 轻微上移（与全局动效语言一致） */
 ::view-transition-old(root) {
-  animation: vt-out 0.18s ease-in both;
+  animation: vt-out 0.22s ease-in both;
 }
 ::view-transition-new(root) {
-  animation: vt-in 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: vt-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes vt-out {
   to {
@@ -135,7 +135,7 @@
 
 /* 共享元素 morphing（首页卡片 logo ↔ 模块页标题 logo）：统一时长与缓动 */
 ::view-transition-group(*) {
-  animation-duration: 0.3s;
+  animation-duration: 0.4s;
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
