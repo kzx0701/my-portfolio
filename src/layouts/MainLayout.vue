@@ -100,11 +100,17 @@ async function handleLogout() {
     <!-- 顶栏（全宽） -->
     <header class="flex h-14 shrink-0 items-center justify-between border-b px-4 sm:px-6">
       <div class="flex min-w-0 items-center gap-3">
-        <img
-          :src="logoUrl"
-          alt="轩屿"
-          class="h-11 w-auto shrink-0 object-contain"
-        />
+        <RouterLink
+          to="/"
+          class="shrink-0 rounded-md transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="返回工作台"
+        >
+          <img
+            :src="logoUrl"
+            alt="轩屿"
+            class="h-11 w-auto shrink-0 object-contain"
+          />
+        </RouterLink>
         <Separator orientation="vertical" class="h-5 hidden sm:block" />
         <h1 class="truncate text-base font-semibold">{{ currentTitle }}</h1>
       </div>
