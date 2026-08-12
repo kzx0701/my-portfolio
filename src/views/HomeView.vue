@@ -39,7 +39,8 @@ const today = computed(() =>
           <img
             :src="logoImgUrl"
             alt=""
-            class="h-20 w-20 shrink-0 drop-shadow-sm sm:h-24 sm:w-24"
+            class="h-20 w-auto shrink-0 object-contain drop-shadow-sm sm:h-24"
+            style="aspect-ratio: 3 / 2"
           />
           <span>
             {{ greeting }}，
