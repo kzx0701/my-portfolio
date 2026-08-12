@@ -113,29 +113,29 @@
 }
 
 /* ---- View Transitions API：路由页面快照过渡（浏览器支持时接管页面切换） ---- */
-/* 旧页面：轻微缩小 + 淡出；新页面：淡入 + 轻微上移（与全局动效语言一致） */
+/* 旧页面：淡出；新页面：淡入。
+   不做缩放/位移（曾 scale(0.98)/translateY(10px)）——整页缩放位移叠加共享元素
+   morphing 会造成明显视觉抖动，纯透明度过渡最稳，无跳动感 */
 ::view-transition-old(root) {
-  animation: vt-out 0.22s ease-in both;
+  animation: vt-out 0.15s ease both;
 }
 ::view-transition-new(root) {
-  animation: vt-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: vt-in 0.25s ease both;
 }
 @keyframes vt-out {
   to {
     opacity: 0;
-    transform: scale(0.98);
   }
 }
 @keyframes vt-in {
   from {
     opacity: 0;
-    transform: translateY(10px);
   }
 }
 
 /* 共享元素 morphing（首页卡片 logo ↔ 模块页标题 logo）：统一时长与缓动 */
 ::view-transition-group(*) {
-  animation-duration: 0.4s;
+  animation-duration: 0.35s;
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
