@@ -147,9 +147,13 @@ async function handleLogout() {
         </div>
       </aside>
 
-      <!-- 主内容区 -->
+      <!-- 主内容区（路由页面过渡：淡入+上移 / 淡出） -->
       <main class="min-w-0 flex-1 overflow-auto p-6">
-        <RouterView />
+        <RouterView v-slot="{ Component }">
+          <Transition name="page" mode="out-in">
+            <component :is="Component" />
+          </Transition>
+        </RouterView>
       </main>
     </div>
 
