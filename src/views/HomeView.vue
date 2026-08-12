@@ -75,10 +75,10 @@ const today = computed(() =>
             <div
               class="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-indigo-500 to-violet-600 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
             />
-            <!-- 角落水印图标（悬停放大/回正/提亮/染品牌色） -->
+            <!-- 角落水印图标（悬停：放大/旋转回旋/滑入/提亮/染品牌色，弹性缓动） -->
             <component
               :is="mod.icon"
-              class="pointer-events-none absolute -right-4 -top-4 h-24 w-24 origin-top-right rotate-12 text-foreground opacity-[0.04] transition-all duration-500 ease-out group-hover:rotate-6 group-hover:scale-110 group-hover:opacity-[0.12] group-hover:text-indigo-500/25"
+              class="pointer-events-none absolute -right-4 -top-4 h-24 w-24 origin-top-right rotate-12 text-foreground opacity-[0.04] transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:translate-x-1.5 group-hover:translate-y-1.5 group-hover:rotate-[-6deg] group-hover:scale-125 group-hover:opacity-[0.16] group-hover:text-indigo-500/40"
             />
 
             <CardHeader class="p-6">
