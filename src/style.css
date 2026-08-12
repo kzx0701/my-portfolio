@@ -79,3 +79,11 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* 系统开启"减弱动态"时，关闭 tw-animate-css 的进出动画 */
+@media (prefers-reduced-motion: reduce) {
+  .animate-in,
+  .animate-out {
+    animation: none !important;
+  }
+}
