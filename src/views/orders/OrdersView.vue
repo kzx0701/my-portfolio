@@ -93,7 +93,6 @@ async function handleDeleteConfirm() {
         </div>
         <div>
           <h2 class="text-lg font-semibold">订单列表</h2>
-          <p class="text-sm text-muted-foreground">管理你的接单项目进度</p>
         </div>
       </div>
       <Button @click="openCreate">

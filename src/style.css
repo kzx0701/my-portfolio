@@ -78,6 +78,25 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Tailwind v4 preflight 将 button 默认光标改为 default（箭头），
+     此处全局恢复为 pointer，保证所有按钮/可点击控件悬停显示手指 */
+  button:not(:disabled),
+  [role='button']:not(:disabled),
+  [role='menuitem']:not(:disabled),
+  [role='switch']:not(:disabled),
+  [role='checkbox']:not(:disabled),
+  [role='radio']:not(:disabled),
+  [role='option']:not(:disabled),
+  select:not(:disabled),
+  label[for],
+  summary,
+  a[href] {
+    cursor: pointer;
+  }
+  button:disabled,
+  [role='button'][aria-disabled='true'] {
+    cursor: not-allowed;
+  }
 }
 
 /* 系统开启"减弱动态"时，关闭 tw-animate-css 的进出动画 */

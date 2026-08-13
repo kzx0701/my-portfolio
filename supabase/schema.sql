@@ -16,6 +16,7 @@ create table if not exists public.orders (
   amount numeric(12, 2),
   status text not null default 'negotiating'
     check (status in ('negotiating','quoted','in_progress','completed','cancelled')),
+  repo_url text,
   description text,
   start_date date,
   due_date date,
@@ -33,9 +34,34 @@ alter table public.orders
 -- 新增渠道来源列（闲鱼 / 微信）
 alter table public.orders add column if not exists channel text
   check (channel in ('xianyu','wechat'));
--- 新增项目类型列（web / app / 小程序 / 其他）
-alter table public.orders add column if not exists project_type text
-  check (project_type in ('web','app','miniapp','other'));
+-- 项目类型恢复为下拉单选：text[] → text（临时列 + UPDATE 拍平取第一个标量，兼容已是 text 的情况，幂等）
+alter table public.orders drop constraint if exists orders_project_type_check;
+alter table public.orders add column if not exists project_type text;
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'orders'
+      and column_name = 'project_type' and data_type = 'ARRAY'
+  ) then
+    alter table public.orders drop column if exists project_type_new;
+    alter table public.orders add column project_type_new text;
+    update public.orders
+    set project_type_new = (
+      select regexp_replace(e, '[{}[\]]', '', 'g')
+      from unnest(project_type) e
+      where regexp_replace(e, '[{}[\]]', '', 'g') <> ''
+      limit 1
+    )
+    where project_type is not null and cardinality(project_type) > 0;
+    alter table public.orders drop column project_type;
+    alter table public.orders rename column project_type_new to project_type;
+  end if;
+end $$;
+alter table public.orders
+  add constraint orders_project_type_check check (project_type in ('web','app','miniapp','other'));
+-- 新增项目地址列（GitHub / Gitee 仓库链接，可空）
+alter table public.orders add column if not exists repo_url text;
 -- 移除进度列（字段规范后不再记录百分比进度）
 alter table public.orders drop column if exists progress;
 

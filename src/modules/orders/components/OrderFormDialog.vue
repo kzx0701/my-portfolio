@@ -29,6 +29,7 @@ const form = reactive<OrderInput>({
   channel: 'xianyu',
   amount: null,
   status: 'negotiating',
+  repo_url: null,
   description: null,
   start_date: null,
   due_date: null,
@@ -45,6 +46,7 @@ watch(
         form.channel = props.order.channel ?? 'xianyu'
         form.amount = props.order.amount
         form.status = props.order.status
+        form.repo_url = props.order.repo_url
         form.description = props.order.description
         form.start_date = props.order.start_date
         form.due_date = props.order.due_date
@@ -55,6 +57,7 @@ watch(
         form.channel = 'xianyu'
         form.amount = null
         form.status = 'negotiating'
+        form.repo_url = null
         form.description = null
         form.start_date = null
         form.due_date = null
@@ -71,6 +74,7 @@ function handleSubmit() {
     client_name: form.client_name?.trim() || null,
     channel: form.channel,
     amount: form.amount === null || form.amount === 0 ? null : Number(form.amount),
+    repo_url: form.repo_url?.trim() || null,
     description: form.description?.trim() || null,
   })
 }
@@ -122,6 +126,16 @@ function handleSubmit() {
           <Label for="due-date">结束日期</Label>
           <DatePicker id="due-date" v-model="form.due_date" placeholder="选择结束日期" />
         </div>
+      </div>
+
+      <div class="space-y-2">
+        <Label for="repo-url">项目地址</Label>
+        <Input
+          id="repo-url"
+          v-model="form.repo_url"
+          type="url"
+          placeholder="GitHub / Gitee 仓库地址，如 https://github.com/user/repo"
+        />
       </div>
 
       <div class="space-y-2">

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Banknote, Pencil, Trash2 } from '@lucide/vue'
+import { Banknote, ExternalLink, Pencil, Trash2 } from '@lucide/vue'
 import { Badge, Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { useOrdersStore } from '@/modules/orders/store'
 import { ORDER_CHANNEL_META, ORDER_STATUS_META, PROJECT_TYPE_META, type Order } from '@/modules/orders/types'
@@ -13,6 +13,11 @@ const emit = defineEmits<{
   remove: [order: Order]
   payments: [order: Order]
 }>()
+
+/** 打开项目源码地址（GitHub / Gitee），无地址时不触发 */
+function openRepo(order: Order) {
+  if (order.repo_url) window.open(order.repo_url, '_blank', 'noopener,noreferrer')
+}
 
 function formatAmount(amount: number | null): string {
   if (amount === null) return '—'
@@ -94,6 +99,15 @@ function paidClass(order: Order): string {
           </TableCell>
           <TableCell>
             <div class="flex justify-center gap-1 whitespace-nowrap">
+              <Button
+                variant="ghost"
+                size="icon"
+                title="查看项目源码"
+                :disabled="!order.repo_url"
+                @click="openRepo(order)"
+              >
+                <ExternalLink class="h-4 w-4" />
+              </Button>
               <Button variant="ghost" size="icon" title="回款" @click="emit('payments', order)">
                 <Banknote class="h-4 w-4" />
               </Button>

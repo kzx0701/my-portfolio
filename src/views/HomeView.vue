@@ -20,13 +20,6 @@ const greeting = computed(() => {
   if (h < 18) return '下午好'
   return '晚上好'
 })
-
-/** 今天的日期文案 */
-const today = computed(() =>
-  new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' }).format(
-    new Date(),
-  ),
-)
 </script>
 
 <template>
@@ -51,9 +44,6 @@ const today = computed(() =>
             </span>
           </span>
         </h2>
-        <p class="mt-2 text-sm text-muted-foreground sm:text-base">
-          今天是 {{ today }}，选择要进入的工作台模块。
-        </p>
       </div>
 
       <!-- 模块入口卡片（w-full 保证在居中容器下撑满宽度，卡片列居中分布） -->

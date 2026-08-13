@@ -139,7 +139,6 @@ const monthlyOption = computed<EChartsCoreOption>(() => ({
         </div>
         <div>
           <h2 class="text-lg font-semibold">数据统计</h2>
-          <p class="text-sm text-muted-foreground">订单状态、金额与渠道的可视化总览</p>
         </div>
       </div>
       <RouterLink

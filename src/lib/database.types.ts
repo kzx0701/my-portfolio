@@ -34,6 +34,7 @@ export type Database = {
           amount: number | null
           status: OrderStatusLiteral
           channel: OrderChannelLiteral | null
+          repo_url: string | null
           description: string | null
           start_date: string | null
           due_date: string | null
@@ -49,6 +50,7 @@ export type Database = {
           amount?: number | null
           status?: OrderStatusLiteral
           channel?: OrderChannelLiteral | null
+          repo_url?: string | null
           description?: string | null
           start_date?: string | null
           due_date?: string | null
@@ -64,6 +66,7 @@ export type Database = {
           amount?: number | null
           status?: OrderStatusLiteral
           channel?: OrderChannelLiteral | null
+          repo_url?: string | null
           description?: string | null
           start_date?: string | null
           due_date?: string | null

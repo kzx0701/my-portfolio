@@ -82,7 +82,6 @@ async function handleSubmit(input: OrderInput) {
         </div>
         <div>
           <h2 class="text-lg font-semibold">仪表盘</h2>
-          <p class="text-sm text-muted-foreground">接单业务概览与最近动态</p>
         </div>
       </div>
       <Button @click="openCreate">
@@ -105,7 +104,7 @@ async function handleSubmit(input: OrderInput) {
     >
       加载失败：{{ store.error }}
     </div>
-    <div v-else class="grid gap-4 lg:grid-cols-3">
+    <div v-else class="grid items-start gap-4 lg:grid-cols-3">
       <!-- 最近订单 -->
       <div class="rounded-lg border lg:col-span-2">
         <div class="flex items-center justify-between border-b px-4 py-3">
@@ -126,8 +125,16 @@ async function handleSubmit(input: OrderInput) {
           <li
             v-for="order in recentOrders"
             :key="order.id"
-            class="flex items-center gap-4 px-4 py-3"
+            class="flex items-center gap-3 px-4 py-3"
           >
+            <!-- 状态标签（行首） -->
+            <Badge
+              variant="outline"
+              :class="ORDER_STATUS_META[order.status].badgeClass"
+              class="shrink-0"
+            >
+              {{ ORDER_STATUS_META[order.status].label }}
+            </Badge>
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2">
                 <span class="truncate text-sm font-medium">{{ order.project_name }}</span>
@@ -136,12 +143,10 @@ async function handleSubmit(input: OrderInput) {
                 </span>
               </div>
             </div>
-            <div class="shrink-0 text-right">
-              <Badge variant="outline" :class="ORDER_STATUS_META[order.status].badgeClass">
-                {{ ORDER_STATUS_META[order.status].label }}
-              </Badge>
-              <p class="mt-1 text-sm font-semibold tabular-nums">{{ formatCurrency(order.amount) }}</p>
-            </div>
+            <!-- 金额（行尾，右对齐） -->
+            <p class="shrink-0 text-right text-sm font-semibold tabular-nums">
+              {{ formatCurrency(order.amount) }}
+            </p>
           </li>
         </ul>
       </div>
