@@ -9,16 +9,35 @@ create table if not exists public.orders (
   user_id uuid not null references auth.users (id) on delete cascade,
   project_name text not null,
   client_name text,
+  project_type text
+    check (project_type in ('web','app','miniapp','other')),
+  channel text
+    check (channel in ('xianyu','wechat')),
   amount numeric(12, 2),
-  status text not null default 'pending'
-    check (status in ('pending','negotiating','in_progress','completed','paid','cancelled')),
-  progress smallint not null default 0 check (progress between 0 and 100),
+  status text not null default 'negotiating'
+    check (status in ('negotiating','quoted','in_progress','completed','cancelled')),
   description text,
   start_date date,
   due_date date,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- ---------- 1.1 存量表迁移（若此前已按旧结构建表） ----------
+-- 状态 6 态 → 4 态：待报价并入洽谈中，已回款并入已完成
+alter table public.orders drop constraint if exists orders_status_check;
+update public.orders set status = 'negotiating' where status = 'pending';
+update public.orders set status = 'completed' where status = 'paid';
+alter table public.orders
+  add constraint orders_status_check check (status in ('negotiating','quoted','in_progress','completed','cancelled'));
+-- 新增渠道来源列（闲鱼 / 微信）
+alter table public.orders add column if not exists channel text
+  check (channel in ('xianyu','wechat'));
+-- 新增项目类型列（web / app / 小程序 / 其他）
+alter table public.orders add column if not exists project_type text
+  check (project_type in ('web','app','miniapp','other'));
+-- 移除进度列（字段规范后不再记录百分比进度）
+alter table public.orders drop column if exists progress;
 
 -- ---------- 2. 更新时间触发器（updated_at 自动刷新） ----------
 create or replace function public.handle_updated_at()
@@ -86,3 +105,47 @@ create policy "avatars_own" on storage.objects
     bucket_id = 'avatars'
     and (storage.foldername(name))[1] = auth.uid()::text
   );
+
+-- ============================================================
+-- 回款记录（payments）
+-- ============================================================
+
+-- ---------- 8. 创建 payments 表 ----------
+-- stage：回款阶段标识（deposit 定金 / final 尾款），不做 check 约束以便未来扩展新阶段（如中期款）
+-- 前端通过 PAYMENT_STAGE_META 控制可选阶段；"定金+尾款=订单金额"由前端校验（已回款合计不得超过订单金额）
+create table if not exists public.payments (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references public.orders (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  stage text not null default 'deposit',
+  amount numeric(12, 2) not null check (amount > 0),
+  paid_at date,
+  note text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- ---------- 9. payments 索引 ----------
+create index if not exists idx_payments_order_id on public.payments (order_id);
+create index if not exists idx_payments_user_id on public.payments (user_id);
+
+-- ---------- 10. payments RLS：每个用户只能读写自己的回款记录 ----------
+alter table public.payments enable row level security;
+
+drop policy if exists "payments_select_own" on public.payments;
+create policy "payments_select_own" on public.payments
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "payments_insert_own" on public.payments;
+create policy "payments_insert_own" on public.payments
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "payments_update_own" on public.payments;
+create policy "payments_update_own" on public.payments
+  for update using (auth.uid() = user_id);
+
+drop policy if exists "payments_delete_own" on public.payments;
+create policy "payments_delete_own" on public.payments
+  for delete using (auth.uid() = user_id);
+
+grant select, insert, update, delete on table public.payments to authenticated;

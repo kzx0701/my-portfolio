@@ -17,6 +17,8 @@ import {
 export interface SelectOption {
   value: string
   label: string
+  /** 选项图标（图片 URL），为 true 时该项不渲染图标 */
+  icon?: string
   disabled?: boolean
 }
 
@@ -37,6 +39,9 @@ function onValueChange(value: string) {
   emit('update:modelValue', value)
 }
 
+/** 当前选中项（用于 trigger 中显示选中状态的图标） */
+const selectedOption = computed(() => props.options?.find((o) => o.value === props.modelValue))
+
 const triggerClass = computed(() =>
   cn(
     'flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
@@ -52,7 +57,19 @@ const triggerClass = computed(() =>
     @update:model-value="onValueChange"
   >
     <SelectTrigger :class="triggerClass">
-      <SelectValue :placeholder="placeholder" />
+      <SelectValue :placeholder="placeholder">
+        <template #default>
+          <span v-if="selectedOption" class="flex items-center gap-2">
+            <img
+              v-if="selectedOption.icon"
+              :src="selectedOption.icon"
+              alt=""
+              class="h-5 w-5 shrink-0 rounded-sm object-contain"
+            />
+            <span class="truncate">{{ selectedOption.label }}</span>
+          </span>
+        </template>
+      </SelectValue>
       <ChevronDown class="h-4 w-4 shrink-0 opacity-50" />
     </SelectTrigger>
     <SelectPortal>
@@ -74,6 +91,12 @@ const triggerClass = computed(() =>
                 <Check class="h-4 w-4" />
               </SelectItemIndicator>
             </span>
+            <img
+              v-if="opt.icon"
+              :src="opt.icon"
+              alt=""
+              class="mr-2 h-5 w-5 shrink-0 rounded-sm object-contain"
+            />
             <SelectItemText>{{ opt.label }}</SelectItemText>
           </SelectItem>
         </SelectViewport>

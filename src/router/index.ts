@@ -29,7 +29,7 @@ const routes: RouteRecordRaw[] = [
         path: 'orders/list',
         name: 'orders-list',
         component: () => import('@/views/orders/OrdersView.vue'),
-        meta: { title: '接单列表' },
+        meta: { title: '订单列表' },
       },
       {
         path: 'orders/stats',
@@ -64,10 +64,14 @@ function resetMainScroll() {
 
 router.push = ((to: Parameters<typeof router.push>[0]) => {
   if (typeof document !== 'undefined' && document.startViewTransition) {
-    return document.startViewTransition(async () => {
+    const transition = document.startViewTransition(async () => {
       await originalPush(to)
       resetMainScroll()
-    }) as unknown as ReturnType<typeof router.push>
+    })
+    // startViewTransition 返回的是 ViewTransition 对象（非 Promise，无 .catch/.then），
+    // 而 RouterLink 内部会对 router.push 的返回值调用 .catch —— 必须返回其 Promise 形态。
+    // updateCallbackDone：回调（导航 + DOM 更新）完成时 resolve，语义与原生 push 一致。
+    return transition.updateCallbackDone as unknown as ReturnType<typeof router.push>
   }
   return originalPush(to).then((result) => {
     resetMainScroll()

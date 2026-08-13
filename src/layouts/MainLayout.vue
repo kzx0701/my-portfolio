@@ -3,14 +3,14 @@ import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import { computed, ref } from "vue";
 import { ArrowLeft, ChevronDown, ChevronRight, LogOut, UserRound } from "@lucide/vue";
 import {
+  Avatar,
+  DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuRoot,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "reka-ui";
-import { Avatar, Separator } from "@/components/ui";
+} from "@/components/ui";
 import ProfileDialog from "@/components/ProfileDialog.vue";
 import { activeModules } from "@/modules/registry";
 import { useAuthStore } from "@/stores/auth";
@@ -31,11 +31,6 @@ const isHome = computed(() => route.path === "/");
 
 /** 当前所在模块（进入模块页后侧边栏显示该模块的菜单） */
 const currentModule = computed(() => activeModules.find((m) => route.path === m.path || route.path.startsWith(`${m.path}/`)));
-
-/** 顶栏标题：首页显示"工作台"，模块内固定显示模块名（不随子菜单标题变化） */
-const currentTitle = computed(() =>
-  isHome.value ? "工作台" : (currentModule.value?.title ?? "工作台"),
-);
 
 /** 面包屑：模块页显示「工作台 / 模块名 / 当前页」，首页不显示 */
 const moduleCrumbs = computed(() => {
@@ -111,14 +106,12 @@ async function handleLogout() {
             class="h-11 w-auto shrink-0 object-contain"
           />
         </RouterLink>
-        <Separator orientation="vertical" class="h-5 hidden sm:block" />
-        <h1 class="truncate text-base font-semibold">{{ currentTitle }}</h1>
       </div>
 
       <!-- 用户区：右上角（头像独立展示，仅用户名可点击下拉） -->
       <div class="flex shrink-0 items-center gap-2">
         <Avatar :src="auth.avatarUrl || undefined" :fallback="userInitial" />
-        <DropdownMenuRoot>
+        <DropdownMenu>
           <DropdownMenuTrigger
             class="flex items-center gap-1.5 rounded-md px-2 py-1.5 outline-none transition-colors hover:bg-accent data-[state=open]:bg-accent"
           >
@@ -156,7 +149,7 @@ async function handleLogout() {
               退出登录
             </DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenuRoot>
+        </DropdownMenu>
       </div>
     </header>
 
@@ -197,7 +190,7 @@ async function handleLogout() {
       <!-- 主内容区：VT 支持时由 View Transitions API 过渡，否则用 Vue Transition（fade）降级 -->
       <main class="min-w-0 flex-1 overflow-auto p-6">
         <!-- 面包屑（仅模块页显示，与页面内容容器同宽对齐） -->
-        <nav v-if="!isHome" class="mx-auto mb-4 flex max-w-6xl items-center gap-1.5 text-sm" aria-label="面包屑">
+        <nav v-if="!isHome" class="mx-auto mb-4 flex max-w-7xl items-center gap-1.5 text-sm" aria-label="面包屑">
           <RouterLink to="/" class="text-muted-foreground transition-colors hover:text-foreground">
             工作台
           </RouterLink>

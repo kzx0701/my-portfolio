@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@/lib/utils'
 import { cva, type VariantProps } from 'class-variance-authority'
+import { Primitive, type PrimitiveProps } from 'reka-ui'
 import { computed } from 'vue'
 
 const buttonVariants = cva(
@@ -34,21 +35,21 @@ const buttonVariants = cva(
 
 type ButtonVariants = VariantProps<typeof buttonVariants>
 
-const props = withDefaults(
-  defineProps<{
-    variant?: ButtonVariants['variant']
-    size?: ButtonVariants['size']
-    type?: 'button' | 'submit' | 'reset'
-    disabled?: boolean
-    class?: string
-  }>(),
-  {
-    variant: 'default',
-    size: 'default',
-    type: 'button',
-    disabled: false,
-  },
-)
+interface Props extends PrimitiveProps {
+  variant?: ButtonVariants['variant']
+  size?: ButtonVariants['size']
+  type?: 'button' | 'submit' | 'reset'
+  disabled?: boolean
+  class?: string
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  as: 'button',
+  variant: 'default',
+  size: 'default',
+  type: 'button',
+  disabled: false,
+})
 
 const cls = computed(() =>
   cn(buttonVariants({ variant: props.variant, size: props.size }), props.class),
@@ -56,7 +57,15 @@ const cls = computed(() =>
 </script>
 
 <template>
-  <button :type="type" :disabled="disabled" :class="cls">
+  <!-- Primitive 渲染：as=button 渲染原生按钮；as-child 模式将样式/事件/引用合并到子元素，
+       支持 reka-ui PopoverTrigger / SelectTrigger 等 asChild 锚点场景 -->
+  <Primitive
+    :as="as"
+    :as-child="asChild"
+    :type="as === 'button' ? type : undefined"
+    :disabled="disabled"
+    :class="cls"
+  >
     <slot />
-  </button>
+  </Primitive>
 </template>

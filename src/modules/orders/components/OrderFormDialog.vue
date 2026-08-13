@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
 import { Button, Dialog, Input, Label, Select, Textarea } from '@/components/ui'
-import { ORDER_STATUS_OPTIONS, type Order, type OrderInput } from '@/modules/orders/types'
+import DatePicker from '@/components/DatePicker.vue'
+import {
+  ORDER_CHANNEL_OPTIONS,
+  ORDER_STATUS_OPTIONS,
+  PROJECT_TYPE_OPTIONS,
+  type Order,
+  type OrderInput,
+} from '@/modules/orders/types'
 
 const props = defineProps<{
   open: boolean
@@ -18,9 +25,10 @@ const emit = defineEmits<{
 const form = reactive<OrderInput>({
   project_name: '',
   client_name: '',
+  project_type: 'web',
+  channel: 'xianyu',
   amount: null,
-  status: 'pending',
-  progress: 0,
+  status: 'negotiating',
   description: null,
   start_date: null,
   due_date: null,
@@ -33,18 +41,20 @@ watch(
       if (props.order) {
         form.project_name = props.order.project_name
         form.client_name = props.order.client_name
+        form.project_type = props.order.project_type ?? 'web'
+        form.channel = props.order.channel ?? 'xianyu'
         form.amount = props.order.amount
         form.status = props.order.status
-        form.progress = props.order.progress
         form.description = props.order.description
         form.start_date = props.order.start_date
         form.due_date = props.order.due_date
       } else {
         form.project_name = ''
         form.client_name = ''
+        form.project_type = 'web'
+        form.channel = 'xianyu'
         form.amount = null
-        form.status = 'pending'
-        form.progress = 0
+        form.status = 'negotiating'
         form.description = null
         form.start_date = null
         form.due_date = null
@@ -59,8 +69,8 @@ function handleSubmit() {
     ...form,
     project_name: form.project_name.trim(),
     client_name: form.client_name?.trim() || null,
+    channel: form.channel,
     amount: form.amount === null || form.amount === 0 ? null : Number(form.amount),
-    progress: Math.min(100, Math.max(0, Number(form.progress) || 0)),
     description: form.description?.trim() || null,
   })
 }
@@ -84,29 +94,33 @@ function handleSubmit() {
         </div>
       </div>
 
-      <div class="grid gap-4 sm:grid-cols-3">
+      <div class="grid gap-4 sm:grid-cols-2">
         <div class="space-y-2">
-          <Label for="amount">金额（元）</Label>
+          <Label for="project-type">项目类型</Label>
+          <Select id="project-type" v-model="form.project_type" :options="PROJECT_TYPE_OPTIONS" />
+        </div>
+        <div class="space-y-2">
+          <Label for="channel">渠道来源</Label>
+          <Select id="channel" v-model="form.channel" :options="ORDER_CHANNEL_OPTIONS" />
+        </div>
+        <div class="space-y-2">
+          <Label for="amount">订单金额（元）</Label>
           <Input id="amount" v-model.number="form.amount" type="number" min="0" step="0.01" placeholder="0" />
         </div>
         <div class="space-y-2">
-          <Label for="status">阶段</Label>
+          <Label for="status">当前阶段</Label>
           <Select id="status" v-model="form.status" :options="ORDER_STATUS_OPTIONS" />
-        </div>
-        <div class="space-y-2">
-          <Label for="progress">进度（%）</Label>
-          <Input id="progress" v-model.number="form.progress" type="number" min="0" max="100" placeholder="0-100" />
         </div>
       </div>
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="space-y-2">
           <Label for="start-date">开始日期</Label>
-          <Input id="start-date" v-model="form.start_date" type="date" />
+          <DatePicker id="start-date" v-model="form.start_date" placeholder="选择开始日期" />
         </div>
         <div class="space-y-2">
-          <Label for="due-date">截止日期</Label>
-          <Input id="due-date" v-model="form.due_date" type="date" />
+          <Label for="due-date">结束日期</Label>
+          <DatePicker id="due-date" v-model="form.due_date" placeholder="选择结束日期" />
         </div>
       </div>
 

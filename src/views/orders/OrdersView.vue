@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { Plus, Briefcase, CheckCircle2, Wallet, Activity, ClipboardList } from '@lucide/vue'
+import { Plus, ClipboardList } from '@lucide/vue'
 import { Button, Skeleton } from '@/components/ui'
 import { useOrdersStore } from '@/modules/orders/store'
 import type { Order, OrderInput } from '@/modules/orders/types'
 import { OrderTable } from '@/modules/orders/components'
 import { OrderFormDialog } from '@/modules/orders/components'
 import { OrderDeleteDialog } from '@/modules/orders/components'
-import { StatCard } from '@/modules/orders/components'
+import { PaymentDialog } from '@/modules/orders/components'
+import { StatsCards } from '@/modules/orders/components'
 import { toast } from '@/lib/toast'
 
 const store = useOrdersStore()
@@ -15,6 +16,8 @@ const store = useOrdersStore()
 const formOpen = ref(false)
 const editingOrder = ref<Order | null>(null)
 const deleteTarget = ref<Order | null>(null)
+const paymentsOpen = ref(false)
+const paymentsOrder = ref<Order | null>(null)
 const submitting = ref(false)
 const deleting = ref(false)
 
@@ -34,6 +37,11 @@ function openEdit(order: Order) {
 
 function openDelete(order: Order) {
   deleteTarget.value = order
+}
+
+function openPayments(order: Order) {
+  paymentsOrder.value = order
+  paymentsOpen.value = true
 }
 
 async function handleSubmit(input: OrderInput) {
@@ -66,21 +74,12 @@ async function handleDeleteConfirm() {
     deleting.value = false
   }
 }
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }).format(value)
-}
 </script>
 
 <template>
-  <div class="mx-auto max-w-6xl space-y-6">
-    <!-- 统计卡片 -->
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <StatCard title="进行中" :value="store.stats.active" :icon="Activity" hint="未完成 / 未取消" />
-      <StatCard title="总订单" :value="store.stats.total" :icon="Briefcase" />
-      <StatCard title="已完成" :value="store.stats.completed" :icon="CheckCircle2" />
-      <StatCard title="累计回款" :value="formatCurrency(store.stats.paidTotal)" :icon="Wallet" />
-    </div>
+  <div class="mx-auto max-w-7xl space-y-6">
+    <!-- 统计卡片（三页共用组件） -->
+    <StatsCards />
 
     <!-- 工具栏 -->
     <div class="flex items-center justify-between">
@@ -93,7 +92,7 @@ function formatCurrency(value: number): string {
           <ClipboardList class="h-5 w-5" />
         </div>
         <div>
-          <h2 class="text-lg font-semibold">接单列表</h2>
+          <h2 class="text-lg font-semibold">订单列表</h2>
           <p class="text-sm text-muted-foreground">管理你的接单项目进度</p>
         </div>
       </div>
@@ -110,7 +109,7 @@ function formatCurrency(value: number): string {
     <div v-else-if="store.error" class="rounded-lg border border-destructive/50 p-6 text-center text-sm text-destructive">
       加载失败：{{ store.error }}
     </div>
-    <OrderTable v-else :orders="store.orders" @edit="openEdit" @remove="openDelete" />
+    <OrderTable v-else :orders="store.orders" @edit="openEdit" @remove="openDelete" @payments="openPayments" />
 
     <!-- 新建/编辑弹窗 -->
     <OrderFormDialog
@@ -127,6 +126,13 @@ function formatCurrency(value: number): string {
       :deleting="deleting"
       @update:open="(v) => !v && (deleteTarget = null)"
       @confirm="handleDeleteConfirm"
+    />
+
+    <!-- 回款管理弹窗（关闭动画期间保留 order，避免内容提前卸载导致关闭闪现） -->
+    <PaymentDialog
+      :open="paymentsOpen"
+      :order="paymentsOrder"
+      @update:open="(v) => !v && (paymentsOpen = false)"
     />
   </div>
 </template>

@@ -9,12 +9,17 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 
 /** 订单状态（orders.status check 约束） */
 export type OrderStatusLiteral =
-  | 'pending' // 待报价
   | 'negotiating' // 洽谈中
+  | 'quoted' // 已报价
   | 'in_progress' // 进行中
   | 'completed' // 已完成
-  | 'paid' // 已回款
   | 'cancelled' // 已取消
+
+/** 渠道来源（orders.channel check 约束） */
+export type OrderChannelLiteral = 'xianyu' | 'wechat'
+
+/** 项目类型（orders.project_type check 约束） */
+export type ProjectTypeLiteral = 'web' | 'app' | 'miniapp' | 'other'
 
 export type Database = {
   public: {
@@ -25,9 +30,10 @@ export type Database = {
           user_id: string
           project_name: string
           client_name: string | null
+          project_type: ProjectTypeLiteral | null
           amount: number | null
           status: OrderStatusLiteral
-          progress: number
+          channel: OrderChannelLiteral | null
           description: string | null
           start_date: string | null
           due_date: string | null
@@ -39,9 +45,10 @@ export type Database = {
           user_id: string
           project_name: string
           client_name?: string | null
+          project_type?: ProjectTypeLiteral | null
           amount?: number | null
           status?: OrderStatusLiteral
-          progress?: number
+          channel?: OrderChannelLiteral | null
           description?: string | null
           start_date?: string | null
           due_date?: string | null
@@ -53,9 +60,10 @@ export type Database = {
           user_id?: string
           project_name?: string
           client_name?: string | null
+          project_type?: ProjectTypeLiteral | null
           amount?: number | null
           status?: OrderStatusLiteral
-          progress?: number
+          channel?: OrderChannelLiteral | null
           description?: string | null
           start_date?: string | null
           due_date?: string | null
@@ -68,6 +76,50 @@ export type Database = {
             columns: ['user_id']
             isOneToOne: false
             referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          id: string
+          order_id: string
+          user_id: string
+          stage: string
+          amount: number
+          paid_at: string | null
+          note: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          user_id: string
+          stage?: string
+          amount: number
+          paid_at?: string | null
+          note?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          user_id?: string
+          stage?: string
+          amount?: number
+          paid_at?: string | null
+          note?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'payments_order_id_fkey'
+            columns: ['order_id']
+            isOneToOne: false
+            referencedRelation: 'orders'
             referencedColumns: ['id']
           },
         ]

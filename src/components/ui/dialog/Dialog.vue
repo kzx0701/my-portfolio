@@ -44,7 +44,10 @@ const contentClass = computed(() =>
       <DialogOverlay
         class="fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0"
       />
-      <DialogContent :class="contentClass">
+      <DialogContent
+        :class="contentClass"
+        v-bind="description ? {} : { 'aria-describedby': undefined }"
+      >
         <div v-if="title || description" class="mb-4">
           <DialogTitle v-if="title" class="text-lg font-semibold">{{ title }}</DialogTitle>
           <DialogDescription

@@ -52,14 +52,14 @@ export const modules: ModuleMeta[] = [
   {
     key: 'orders',
     title: '接单中心',
-    description: '管理个人接单项目，跟踪报价、进度、回款与交付。',
+    description: '管理个人接单项目，跟踪渠道、阶段与交付。',
     path: '/orders',
     icon: ClipboardList,
     order: 1,
     active: true,
     children: [
       { key: 'orders-dashboard', title: '仪表盘', path: '/orders', icon: LayoutDashboard },
-      { key: 'orders-list', title: '接单列表', path: '/orders/list', icon: ListChecks },
+      { key: 'orders-list', title: '订单列表', path: '/orders/list', icon: ListChecks },
       { key: 'orders-stats', title: '数据统计', path: '/orders/stats', icon: BarChart3 },
     ],
   },

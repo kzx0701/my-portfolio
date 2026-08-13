@@ -2,16 +2,12 @@
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import {
-  Activity,
   ArrowRight,
-  Briefcase,
-  CheckCircle2,
   ClipboardList,
   Plus,
-  Wallet,
 } from '@lucide/vue'
-import { Badge, Button, Progress, Skeleton } from '@/components/ui'
-import { OrderFormDialog, StatCard } from '@/modules/orders/components'
+import { Badge, Button, Skeleton } from '@/components/ui'
+import { OrderFormDialog, StatsCards } from '@/modules/orders/components'
 import { useOrdersStore } from '@/modules/orders/store'
 import {
   ORDER_STATUS_META,
@@ -43,11 +39,10 @@ const statusDistribution = computed(() => {
 
 /** 状态 → 条形配色（与统计页图表色一致） */
 const STATUS_BAR_COLOR: Record<OrderStatus, string> = {
-  pending: 'bg-zinc-400',
   negotiating: 'bg-amber-500',
+  quoted: 'bg-teal-500',
   in_progress: 'bg-indigo-500',
   completed: 'bg-cyan-400',
-  paid: 'bg-emerald-500',
   cancelled: 'bg-red-500',
 }
 
@@ -75,7 +70,7 @@ async function handleSubmit(input: OrderInput) {
 </script>
 
 <template>
-  <div class="mx-auto max-w-6xl space-y-6">
+  <div class="mx-auto max-w-7xl space-y-6">
     <!-- 标题区（logo 与首页卡片同 viewTransitionName，实现 VT 共享元素 morphing） -->
     <div class="flex items-center justify-between gap-3">
       <div class="flex items-center gap-3">
@@ -96,13 +91,8 @@ async function handleSubmit(input: OrderInput) {
       </Button>
     </div>
 
-    <!-- 统计卡片 -->
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <StatCard title="进行中" :value="store.stats.active" :icon="Activity" hint="未完成 / 未取消" />
-      <StatCard title="总订单" :value="store.stats.total" :icon="Briefcase" />
-      <StatCard title="已完成" :value="store.stats.completed" :icon="CheckCircle2" />
-      <StatCard title="累计回款" :value="formatCurrency(store.stats.paidTotal)" :icon="Wallet" />
-    </div>
+    <!-- 统计卡片（三页共用组件） -->
+    <StatsCards />
 
     <!-- 主区域：最近订单 + 状态分布 -->
     <div v-if="store.loading" class="grid gap-4 lg:grid-cols-3">
@@ -145,13 +135,9 @@ async function handleSubmit(input: OrderInput) {
                   {{ order.client_name || '—' }}
                 </span>
               </div>
-              <div class="mt-1.5 flex items-center gap-2">
-                <Progress :model-value="order.progress" class="h-1.5 w-32" />
-                <span class="text-xs tabular-nums text-muted-foreground">{{ order.progress }}%</span>
-              </div>
             </div>
             <div class="shrink-0 text-right">
-              <Badge :variant="ORDER_STATUS_META[order.status].variant">
+              <Badge variant="outline" :class="ORDER_STATUS_META[order.status].badgeClass">
                 {{ ORDER_STATUS_META[order.status].label }}
               </Badge>
               <p class="mt-1 text-sm font-semibold tabular-nums">{{ formatCurrency(order.amount) }}</p>
