@@ -31,12 +31,6 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/orders/OrdersView.vue'),
         meta: { title: '订单列表' },
       },
-      {
-        path: 'orders/stats',
-        name: 'orders-stats',
-        component: () => import('@/views/orders/OrdersStatsView.vue'),
-        meta: { title: '数据统计' },
-      },
       // ---- 预留模块路由：后续确定后在 modules/registry.ts 开启并在此挂载 ----
     ],
   },

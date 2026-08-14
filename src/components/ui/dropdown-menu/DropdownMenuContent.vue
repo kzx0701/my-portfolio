@@ -32,7 +32,6 @@ const { class: _, ...contentProps } = props
       @pointer-down-outside="emits('pointerDownOutside', $event)"
       @focus-outside="emits('focusOutside', $event)"
       @interact-outside="emits('interactOutside', $event)"
-      @open-auto-focus="emits('openAutoFocus', $event)"
       @close-auto-focus="emits('closeAutoFocus', $event)"
     >
       <slot />

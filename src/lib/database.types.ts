@@ -81,6 +81,13 @@ export type Database = {
             referencedRelation: 'users'
             referencedColumns: ['id']
           },
+          {
+            foreignKeyName: 'payments_order_id_fkey'
+            columns: ['id']
+            isOneToOne: false
+            referencedRelation: 'payments'
+            referencedColumns: ['order_id']
+          },
         ]
       }
       payments: {

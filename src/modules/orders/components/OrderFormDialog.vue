@@ -9,6 +9,7 @@ import {
   type Order,
   type OrderInput,
 } from '@/modules/orders/types'
+import { toast } from '@/lib/toast'
 
 const props = defineProps<{
   open: boolean
@@ -68,6 +69,11 @@ watch(
 
 function handleSubmit() {
   if (!form.project_name.trim()) return
+  // 日期校验：开始日期不能晚于结束日期
+  if (form.start_date && form.due_date && form.start_date > form.due_date) {
+    toast('开始日期不能晚于结束日期', 'error')
+    return
+  }
   emit('submit', {
     ...form,
     project_name: form.project_name.trim(),

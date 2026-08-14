@@ -12,6 +12,8 @@ export const useOrdersStore = defineStore('orders', () => {
   const error = ref<string | null>(null)
   /** 是否已成功加载过数据（首次加载显示骨架屏，之后切换菜单静默刷新，避免骨架屏反复闪现） */
   const hasLoaded = ref(false)
+  /** 已加载数据的用户 id：同一用户页面切换不重复全量拉取（避免每次进入都等 5-6 秒） */
+  let loadedUserId: string | undefined
 
   const stats = computed(() => {
     const active = orders.value.filter(
@@ -27,36 +29,41 @@ export const useOrdersStore = defineStore('orders', () => {
     return { active, total, completed, paidTotal }
   })
 
-  async function fetchOrders() {
+  /** 拉取订单与回款数据；返回是否成功（供调用方做刷新提示等） */
+  async function fetchOrders(force = false): Promise<boolean> {
     const auth = useAuthStore()
-    if (!auth.user) return
+    if (!auth.user) return false
+    // 同一用户已加载过 → 直接复用本地数据（切页零请求；换账号或刷新页面会重新加载；force 可强制刷新）
+    if (!force && hasLoaded.value && loadedUserId === auth.user.id) return true
+    loadedUserId = auth.user.id
     if (!hasLoaded.value) loading.value = true
     error.value = null
     try {
+      // 单次嵌套查询：orders 连同各自 payments 一次取回（外键关系 payments_order_id_fkey）
       const { data, error: err } = await supabase
         .from('orders')
-        .select('*')
+        .select('*, payments(id, order_id, user_id, stage, amount, paid_at, note, created_at, updated_at)')
         .eq('user_id', auth.user.id)
         .order('created_at', { ascending: false })
       if (err) throw err
-      orders.value = data ?? []
-      // 并行拉取全部回款记录（按订单聚合），避免每个订单单独请求
-      const { data: payments, error: paymentsErr } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('user_id', auth.user.id)
-        .order('paid_at', { ascending: false })
-      if (!paymentsErr) {
-        const map: Record<string, Payment[]> = {}
-        for (const p of payments ?? []) {
-          ;(map[p.order_id] ??= []).push(p)
+      const raw = (data ?? []) as unknown as (Order & { payments?: Payment[] | null })[]
+      // 剥离嵌套 payments 字段，保证 orders.value 与 Order 类型一致
+      orders.value = raw.map(({ payments: _p, ...order }) => order)
+      const map: Record<string, Payment[]> = {}
+      for (const o of raw) {
+        if (o.payments?.length) {
+          map[o.id] = [...o.payments].sort((a, b) =>
+            (b.paid_at ?? '').localeCompare(a.paid_at ?? ''),
+          )
         }
-        paymentsMap.value = map
       }
+      paymentsMap.value = map
       hasLoaded.value = true
+      return true
     } catch (e: any) {
       error.value = e?.message ?? '加载订单失败'
       console.error('fetchOrders error:', e)
+      return false
     } finally {
       loading.value = false
     }

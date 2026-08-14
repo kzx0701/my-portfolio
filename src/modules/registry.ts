@@ -1,6 +1,5 @@
 import type { Component } from 'vue'
 import {
-  BarChart3,
   ClipboardList,
   FileText,
   FolderKanban,
@@ -60,7 +59,6 @@ export const modules: ModuleMeta[] = [
     children: [
       { key: 'orders-dashboard', title: '仪表盘', path: '/orders', icon: LayoutDashboard },
       { key: 'orders-list', title: '订单列表', path: '/orders/list', icon: ListChecks },
-      { key: 'orders-stats', title: '数据统计', path: '/orders/stats', icon: BarChart3 },
     ],
   },
   // ---- 以下为预留模块，后续确定后开启（enabled: true）即可 ----

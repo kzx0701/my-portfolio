@@ -18,7 +18,7 @@ const { class: _, ...checkboxProps } = props
         props.class,
       )
     "
-    @update:checked="emits('update:checked', $event)"
+    @update:model-value="emits('update:modelValue', $event)"
   >
     <CheckboxIndicator class="flex h-full w-full items-center justify-center text-current">
       <Check class="h-3.5 w-3.5" />

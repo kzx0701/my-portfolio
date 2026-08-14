@@ -24,7 +24,8 @@ export interface SelectOption {
 
 const props = withDefaults(
   defineProps<{
-    modelValue?: string
+    /** 允许 null：channel / project_type 等数据库可空字段 */
+    modelValue?: string | number | null
     options?: SelectOption[]
     placeholder?: string
     disabled?: boolean
@@ -35,12 +36,14 @@ const props = withDefaults(
 
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
-function onValueChange(value: string) {
-  emit('update:modelValue', value)
+function onValueChange(value: string | number | null) {
+  emit('update:modelValue', String(value ?? ''))
 }
 
 /** 当前选中项（用于 trigger 中显示选中状态的图标） */
-const selectedOption = computed(() => props.options?.find((o) => o.value === props.modelValue))
+const selectedOption = computed(() =>
+  props.options?.find((o) => o.value === String(props.modelValue ?? '')),
+)
 
 const triggerClass = computed(() =>
   cn(

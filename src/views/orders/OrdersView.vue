@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { Plus, ClipboardList } from '@lucide/vue'
+import { Plus, ClipboardList, RotateCw } from '@lucide/vue'
 import { Button, Skeleton } from '@/components/ui'
 import { useOrdersStore } from '@/modules/orders/store'
 import type { Order, OrderInput } from '@/modules/orders/types'
@@ -18,6 +18,20 @@ const editingOrder = ref<Order | null>(null)
 const deleteTarget = ref<Order | null>(null)
 const paymentsOpen = ref(false)
 const paymentsOrder = ref<Order | null>(null)
+/** 刷新中（只驱动按钮图标旋转，不触发页面骨架屏） */
+const refreshing = ref(false)
+
+/** 强制从服务端重新拉取数据（绕过本地缓存），并提示结果 */
+async function handleRefresh() {
+  refreshing.value = true
+  try {
+    const ok = await store.fetchOrders(true)
+    if (ok) toast('数据已刷新', 'success')
+    else toast('刷新失败，请重试', 'error')
+  } finally {
+    refreshing.value = false
+  }
+}
 const submitting = ref(false)
 const deleting = ref(false)
 
@@ -49,8 +63,10 @@ async function handleSubmit(input: OrderInput) {
   try {
     if (editingOrder.value) {
       await store.updateOrder(editingOrder.value.id, input)
+      toast('订单已更新', 'success')
     } else {
       await store.createOrder(input)
+      toast('订单创建成功', 'success')
     }
     formOpen.value = false
   } catch (e: any) {
@@ -67,6 +83,7 @@ async function handleDeleteConfirm() {
   try {
     await store.deleteOrder(deleteTarget.value.id)
     deleteTarget.value = null
+    toast('订单已删除', 'success')
   } catch (e: any) {
     console.error('删除订单失败', e)
     toast(e?.message ?? '删除失败', 'error')
@@ -78,9 +95,6 @@ async function handleDeleteConfirm() {
 
 <template>
   <div class="mx-auto max-w-7xl space-y-6">
-    <!-- 统计卡片（三页共用组件） -->
-    <StatsCards />
-
     <!-- 工具栏 -->
     <div class="flex items-center justify-between">
       <!-- 标题区（logo 与首页卡片同 viewTransitionName，实现 VT 共享元素 morphing） -->
@@ -95,11 +109,20 @@ async function handleDeleteConfirm() {
           <h2 class="text-lg font-semibold">订单列表</h2>
         </div>
       </div>
-      <Button @click="openCreate">
-        <Plus class="h-4 w-4" />
-        新建订单
-      </Button>
+      <div class="flex shrink-0 items-center gap-2">
+        <Button variant="outline" :disabled="store.loading || refreshing" @click="handleRefresh">
+          <RotateCw class="h-4 w-4" :class="refreshing && 'animate-spin'" />
+          刷新
+        </Button>
+        <Button @click="openCreate">
+          <Plus class="h-4 w-4" />
+          新建订单
+        </Button>
+      </div>
     </div>
+
+    <!-- 统计卡片（与仪表盘一致，位于标题下方） -->
+    <StatsCards />
 
     <!-- 列表 -->
     <div v-if="store.loading" class="space-y-2">

@@ -8,7 +8,6 @@ import {
   PAYMENT_STAGE_META,
   PAYMENT_STAGE_OPTIONS,
   type Order,
-  type PaymentInput,
 } from '@/modules/orders/types'
 import { toast } from '@/lib/toast'
 
@@ -95,6 +94,7 @@ async function handleAdd() {
       paid_at: form.paid_at,
       note: form.note?.trim() || null,
     })
+    toast(`已记录回款 ${formatAmount(amount)}`, 'success')
     form.amount = null
     form.paid_at = null
     form.note = null
@@ -110,6 +110,7 @@ async function handleDelete(paymentId: string) {
   if (!props.order) return
   try {
     await store.deletePayment(props.order.id, paymentId)
+    toast('回款记录已删除', 'success')
   } catch (e: any) {
     console.error('删除回款失败', e)
     toast(e?.message ?? '删除失败', 'error')
