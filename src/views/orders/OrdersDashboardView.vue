@@ -94,9 +94,30 @@ async function handleSubmit(input: OrderInput) {
     <StatsCards />
 
     <!-- 主区域：左侧统计图表（2×2）+ 右侧最近订单 -->
-    <div v-if="store.loading" class="grid gap-4 lg:grid-cols-3">
-      <Skeleton class="h-[34rem] rounded-lg lg:col-span-2" />
-      <Skeleton class="h-[34rem] rounded-lg" />
+    <div v-if="store.loading" class="grid items-start gap-4 lg:grid-cols-3">
+      <!-- 左：4 张图表卡骨架（与 OrderCharts 同构） -->
+      <div class="grid gap-4 sm:grid-cols-2 lg:col-span-2">
+        <div v-for="i in 4" :key="i" class="rounded-xl border bg-card p-4 shadow-sm">
+          <Skeleton class="h-4 w-24" />
+          <Skeleton class="mt-4 h-52 w-full" />
+        </div>
+      </div>
+      <!-- 右：最近订单卡骨架 -->
+      <div class="rounded-xl border bg-card shadow-sm">
+        <div class="border-b px-4 py-3">
+          <Skeleton class="h-5 w-24" />
+        </div>
+        <ul class="divide-y">
+          <li v-for="i in 5" :key="i" class="flex items-center gap-3 px-4 py-3.5">
+            <Skeleton class="h-5 w-16 shrink-0 rounded-full" />
+            <div class="min-w-0 flex-1 space-y-1.5">
+              <Skeleton class="h-3.5 w-3/4" />
+              <Skeleton class="h-3 w-1/2" />
+            </div>
+            <Skeleton class="h-4 w-16 shrink-0" />
+          </li>
+        </ul>
+      </div>
     </div>
     <div
       v-else-if="store.error"

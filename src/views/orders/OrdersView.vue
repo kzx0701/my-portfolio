@@ -13,6 +13,19 @@ import { toast } from '@/lib/toast'
 
 const store = useOrdersStore()
 
+/** 表格骨架各列占位宽度（与真实列内容长短匹配，观感更真实） */
+const SKELETON_COL_WIDTHS = [
+  'w-3/4', // 项目名称
+  'w-1/2', // 客户名称
+  'w-2/3', // 订单金额
+  'w-2/3', // 回款金额
+  'w-2/3', // 项目周期
+  'w-1/2', // 项目类型
+  'w-3/5', // 渠道来源
+  'w-3/5', // 当前阶段
+  'w-3/4', // 操作
+]
+
 const formOpen = ref(false)
 const editingOrder = ref<Order | null>(null)
 const deleteTarget = ref<Order | null>(null)
@@ -125,8 +138,19 @@ async function handleDeleteConfirm() {
     <StatsCards />
 
     <!-- 列表 -->
-    <div v-if="store.loading" class="space-y-2">
-      <Skeleton v-for="i in 4" :key="i" class="h-12 w-full" />
+    <div v-if="store.loading" class="overflow-hidden rounded-lg border bg-card">
+      <!-- 表头骨架 -->
+      <div class="flex h-12 items-center border-b bg-muted/30 px-2">
+        <div v-for="i in 9" :key="`h-${i}`" class="w-[11.11%] px-2">
+          <Skeleton class="h-4 w-16" />
+        </div>
+      </div>
+      <!-- 数据行骨架（5 行 × 9 列，列宽差异化） -->
+      <div v-for="r in 5" :key="`r-${r}`" class="flex h-12 items-center border-b px-2 last:border-0">
+        <div v-for="(w, c) in SKELETON_COL_WIDTHS" :key="`c-${c}`" class="w-[11.11%] px-2">
+          <Skeleton class="h-4" :class="w" />
+        </div>
+      </div>
     </div>
     <div v-else-if="store.error" class="rounded-lg border border-destructive/50 p-6 text-center text-sm text-destructive">
       加载失败：{{ store.error }}

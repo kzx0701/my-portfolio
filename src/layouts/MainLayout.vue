@@ -47,6 +47,12 @@ const userInitial = computed(() => auth.username.charAt(0).toUpperCase() || "客
 
 const userEmail = computed(() => auth.user?.email ?? "");
 
+/** 顶栏用户菜单（受控模式：reka-ui 非受控 passive 链路在此环境失效，受控后正常） */
+const menuOpen = ref(false);
+function onMenuOpenChange(v: boolean) {
+  menuOpen.value = v;
+}
+
 async function handleLogout() {
   try {
     await auth.signOut();
@@ -111,7 +117,7 @@ async function handleLogout() {
       <!-- 用户区：右上角（头像独立展示，仅用户名可点击下拉） -->
       <div class="flex shrink-0 items-center gap-2">
         <Avatar :src="auth.avatarUrl || undefined" :fallback="userInitial" />
-        <DropdownMenu>
+        <DropdownMenu :open="menuOpen" @update:open="onMenuOpenChange">
           <DropdownMenuTrigger
             class="flex items-center gap-1.5 rounded-md px-2 py-1.5 outline-none transition-colors hover:bg-accent data-[state=open]:bg-accent"
           >
