@@ -19,7 +19,13 @@ import {
 import { cn } from '@/lib/utils'
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 
-const props = defineProps<CalendarRootProps & { class?: HTMLAttributes['class'] }>()
+const props = defineProps<
+  CalendarRootProps & {
+    class?: HTMLAttributes['class']
+    /** 隐藏默认头部（年月 + 翻页按钮），由外部提供自定义导航（如年月下拉） */
+    hideHeader?: boolean
+  }
+>()
 const emits = defineEmits<CalendarRootEmits>()
 
 const delegatedProps = computed(() => {
@@ -34,8 +40,9 @@ const delegatedProps = computed(() => {
     v-bind="delegatedProps"
     :class="cn('p-3', props.class)"
     @update:model-value="emits('update:modelValue', $event)"
+    @update:placeholder="emits('update:placeholder', $event)"
   >
-    <CalendarHeader class="flex items-center justify-between pt-1">
+    <CalendarHeader v-if="!props.hideHeader" class="flex items-center justify-between pt-1">
       <CalendarPrev
         class="inline-flex h-7 w-7 items-center justify-center rounded-md border border-input bg-transparent text-sm font-medium opacity-50 shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
       >

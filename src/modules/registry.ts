@@ -1,10 +1,14 @@
 import type { Component } from 'vue'
 import {
+  Activity,
   ClipboardList,
   FileText,
   FolderKanban,
+  HeartPulse,
   LayoutDashboard,
   ListChecks,
+  Target,
+  UserRound,
 } from '@lucide/vue'
 
 /**
@@ -61,6 +65,21 @@ export const modules: ModuleMeta[] = [
       { key: 'orders-list', title: '订单列表', path: '/orders/list', icon: ListChecks },
     ],
   },
+  {
+    key: 'health',
+    title: '健康中心',
+    description: '记录个人健康指标，跟踪体重、BMI 等数据变化。',
+    path: '/health',
+    icon: HeartPulse,
+    order: 2,
+    active: true,
+    children: [
+      { key: 'health-dashboard', title: '仪表盘', path: '/health', icon: LayoutDashboard },
+      { key: 'health-records', title: '健康记录', path: '/health/records', icon: Activity },
+      { key: 'health-profile', title: '个人档案', path: '/health/profile', icon: UserRound },
+      { key: 'health-goal', title: '健康目标', path: '/health/goal', icon: Target },
+    ],
+  },
   // ---- 以下为预留模块，后续确定后开启（enabled: true）即可 ----
   {
     key: 'journals',
@@ -68,7 +87,7 @@ export const modules: ModuleMeta[] = [
     description: '记录日常与思考，沉淀知识。（预留模块）',
     path: '/journals',
     icon: FileText,
-    order: 2,
+    order: 3,
     enabled: false,
   },
   {
@@ -77,7 +96,7 @@ export const modules: ModuleMeta[] = [
     description: '展示与管理自己做过的项目。（预留模块）',
     path: '/projects',
     icon: FolderKanban,
-    order: 3,
+    order: 4,
     enabled: false,
   },
   {
@@ -86,7 +105,7 @@ export const modules: ModuleMeta[] = [
     description: '各模块数据聚合总览。（预留模块）',
     path: '/dashboard',
     icon: LayoutDashboard,
-    order: 4,
+    order: 5,
     enabled: false,
   },
 ]

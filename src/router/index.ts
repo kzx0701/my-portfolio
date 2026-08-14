@@ -31,6 +31,30 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/orders/OrdersView.vue'),
         meta: { title: '订单列表' },
       },
+      {
+        path: 'health',
+        name: 'health',
+        component: () => import('@/views/health/HealthDashboardView.vue'),
+        meta: { title: '仪表盘' },
+      },
+      {
+        path: 'health/records',
+        name: 'health-records',
+        component: () => import('@/views/health/HealthRecordsView.vue'),
+        meta: { title: '健康记录' },
+      },
+      {
+        path: 'health/profile',
+        name: 'health-profile',
+        component: () => import('@/views/health/HealthProfileView.vue'),
+        meta: { title: '个人档案' },
+      },
+      {
+        path: 'health/goal',
+        name: 'health-goal',
+        component: () => import('@/views/health/HealthGoalView.vue'),
+        meta: { title: '健康目标' },
+      },
       // ---- 预留模块路由：后续确定后在 modules/registry.ts 开启并在此挂载 ----
     ],
   },

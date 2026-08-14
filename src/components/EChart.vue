@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import * as echarts from 'echarts/core'
-import { BarChart, PieChart } from 'echarts/charts'
+import { BarChart, LineChart, PieChart } from 'echarts/charts'
 import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import type { ECharts, EChartsCoreOption } from 'echarts/core'
@@ -9,6 +9,7 @@ import type { ECharts, EChartsCoreOption } from 'echarts/core'
 // 按需注册：仅打包用到的图表类型与组件，控制产物体积
 echarts.use([
   BarChart,
+  LineChart,
   PieChart,
   GridComponent,
   LegendComponent,

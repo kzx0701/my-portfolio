@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, type CSSProperties } from 'vue'
 
 const props = withDefaults(
   defineProps<{
     modelValue?: number
     max?: number
     class?: string
+    /** 填充层样式类（如渐变），提供后替换默认 bg-primary */
+    indicatorClass?: string
+    /** 填充层内联样式（与宽度合并，用于颜色随进度滑动等动态场景） */
+    indicatorStyle?: CSSProperties
   }>(),
   {
     modelValue: 0,
@@ -30,8 +34,9 @@ const percentage = computed(() => {
     :class="props.class"
   >
     <div
-      class="h-full bg-primary transition-all"
-      :style="{ width: `${percentage}%` }"
+      class="h-full transition-all"
+      :class="props.indicatorClass || 'bg-primary'"
+      :style="[{ width: `${percentage}%` }, props.indicatorStyle]"
     />
   </div>
 </template>

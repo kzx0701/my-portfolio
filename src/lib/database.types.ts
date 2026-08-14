@@ -21,6 +21,18 @@ export type OrderChannelLiteral = 'xianyu' | 'wechat'
 /** 项目类型（orders.project_type check 约束） */
 export type ProjectTypeLiteral = 'web' | 'app' | 'miniapp' | 'other'
 
+/** 性别（health_profile.gender check 约束） */
+export type HealthGenderLiteral = 'male' | 'female'
+
+/** 血型（health_profile.blood_type check 约束） */
+export type HealthBloodTypeLiteral = 'A' | 'B' | 'AB' | 'O'
+
+/** 健康目标类型（health_goal.goal_type check 约束） */
+export type HealthGoalTypeLiteral = 'fat_loss' | 'muscle_gain' | 'maintain'
+
+/** 健康目标状态（health_goal.status check 约束） */
+export type HealthGoalStatusLiteral = 'in_progress' | 'completed' | 'cancelled'
+
 export type Database = {
   public: {
     Tables: {
@@ -130,6 +142,144 @@ export type Database = {
             columns: ['order_id']
             isOneToOne: false
             referencedRelation: 'orders'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      health_records: {
+        Row: {
+          id: string
+          user_id: string
+          record_date: string
+          weight_kg: number | null
+          body_fat_pct: number | null
+          muscle_kg: number | null
+          bmi: number | null
+          note: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          record_date?: string
+          weight_kg?: number | null
+          body_fat_pct?: number | null
+          muscle_kg?: number | null
+          bmi?: number | null
+          note?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          record_date?: string
+          weight_kg?: number | null
+          body_fat_pct?: number | null
+          muscle_kg?: number | null
+          bmi?: number | null
+          note?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'health_records_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      health_profile: {
+        Row: {
+          user_id: string
+          height_cm: number | null
+          birth_date: string | null
+          gender: HealthGenderLiteral | null
+          blood_type: HealthBloodTypeLiteral | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          height_cm?: number | null
+          birth_date?: string | null
+          gender?: HealthGenderLiteral | null
+          blood_type?: HealthBloodTypeLiteral | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          height_cm?: number | null
+          birth_date?: string | null
+          gender?: HealthGenderLiteral | null
+          blood_type?: HealthBloodTypeLiteral | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'health_profile_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: true
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      health_goal: {
+        Row: {
+          id: string
+          user_id: string
+          goal_type: HealthGoalTypeLiteral | null
+          start_weight_kg: number | null
+          start_date: string | null
+          target_weight_kg: number | null
+          target_body_fat_pct: number | null
+          target_date: string | null
+          achieved_date: string | null
+          status: HealthGoalStatusLiteral
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          goal_type?: HealthGoalTypeLiteral | null
+          start_weight_kg?: number | null
+          start_date?: string | null
+          target_weight_kg?: number | null
+          target_body_fat_pct?: number | null
+          target_date?: string | null
+          achieved_date?: string | null
+          status?: HealthGoalStatusLiteral
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          goal_type?: HealthGoalTypeLiteral | null
+          start_weight_kg?: number | null
+          start_date?: string | null
+          target_weight_kg?: number | null
+          target_body_fat_pct?: number | null
+          target_date?: string | null
+          achieved_date?: string | null
+          status?: HealthGoalStatusLiteral
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'health_goal_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
             referencedColumns: ['id']
           },
         ]
