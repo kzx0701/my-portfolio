@@ -27,8 +27,8 @@ const emit = defineEmits<{
 
 const store = useAiStore()
 
-/** Agent 工具类型选项（workbuddy/trae/other） */
-const AGENT_TYPE_OPTIONS = ['workbuddy', 'trae', 'other'].map((value) => ({
+/** Agent 工具类型选项 */
+const AGENT_TYPE_OPTIONS = ['kimi', 'rightcode', 'pixelapi', 'shareapi'].map((value) => ({
   value,
   label: SERVICE_TYPE_META[value].label,
 }))
@@ -38,8 +38,6 @@ const form = reactive({
   name: '',
   // 模型 API 分支
   provider: 'deepseek',
-  customBase: '',
-  customBalanceUrl: '',
   apiKey: '',
   // 手动余额（模型 API 分支：无余额接口的平台手工维护；查询成功时被覆盖）
   manualBalance: null as number | '' | null,
@@ -55,18 +53,9 @@ const checkResult = ref<{ ok: boolean; balance: number | null; error?: string } 
 /** 最近一次查询成功的余额（提交时带上） */
 const lastQueriedBalance = ref<number | null>(null)
 
-/** 是否自定义/中转站（需手填地址） */
-const isCustom = computed(() => form.provider === 'custom' || form.provider === 'relay')
-
 /** 计算后的 API 地址与余额接口 */
-const apiBase = computed(() =>
-  isCustom.value ? form.customBase.trim() : resolveApiBase(form.provider),
-)
-const balanceUrl = computed(() =>
-  isCustom.value
-    ? form.customBalanceUrl.trim()
-    : resolveBalanceUrl(form.provider),
-)
+const apiBase = computed(() => resolveApiBase(form.provider))
+const balanceUrl = computed(() => resolveBalanceUrl(form.provider))
 
 /** 是否有可用余额查询接口（无则不显示「查询余量」按钮） */
 const canQueryBalance = computed(() => balanceUrl.value.length > 0)
@@ -88,15 +77,13 @@ watch(
     form.kind = (s?.kind as 'model_api' | 'agent') ?? 'model_api'
     form.name = s?.name ?? ''
     form.provider = (s?.service_type as string) ?? 'deepseek'
-    // 预设平台还是自定义：service_type 不在预设列表内 → 归入自定义
-    if (!['deepseek', 'zhipu', 'xiaomi', 'relay', 'custom'].includes(form.provider)) {
-      form.provider = 'custom'
+    // 预设平台：service_type 不在预设列表内 → 归入 deepseek
+    if (!BALANCE_PROVIDER_OPTIONS.some((o) => o.value === form.provider)) {
+      form.provider = 'deepseek'
     }
-    form.customBase = s?.base_url ?? ''
-    form.customBalanceUrl = s?.balance_query_url ?? ''
     form.apiKey = ''
     form.manualBalance = null
-    form.agentType = (s?.service_type as string) ?? 'workbuddy'
+    form.agentType = (s?.service_type as string) ?? 'kimi'
     form.agentBalance = s?.balance ?? null
     form.note = s?.note ?? null
     checkResult.value = null
@@ -107,10 +94,6 @@ watch(
 /** 平台切换时，自定义地址同步到当前值 */
 function onProviderChange(value: string) {
   form.provider = value
-  if (!isCustom.value) {
-    form.customBase = resolveApiBase(value)
-    form.customBalanceUrl = resolveBalanceUrl(value)
-  }
 }
 
 async function handleCheckBalance() {
@@ -254,12 +237,11 @@ function handleSubmit() {
           <Label for="mk-base">API 地址</Label>
           <Input
             id="mk-base"
-            :model-value="isCustom ? form.customBase : apiBase"
-            :readonly="!isCustom"
-            :placeholder="isCustom ? '如 https://api.deepseek.com' : apiBase"
-            @update:model-value="(v) => (form.customBase = String(v))"
+            :model-value="apiBase"
+            readonly
+            :placeholder="apiBase"
           />
-          <p v-if="!isCustom" class="text-xs text-muted-foreground">预设平台地址已自动带出</p>
+          <p class="text-xs text-muted-foreground">预设平台地址已自动带出</p>
         </div>
 
         <div class="space-y-2">
@@ -289,16 +271,7 @@ function handleSubmit() {
               {{ form.provider === 'xiaomi' ? '小米 MiMo 余额需在控制台查看，暂不支持自动查询，请手动填写' : '该平台暂不支持自动查询余量，可手动填写' }}
             </p>
           </div>
-          <div v-if="canQueryBalance" class="space-y-2">
-            <Label for="mk-bal-url">余额查询接口（选填）</Label>
-            <Input
-              id="mk-bal-url"
-              :model-value="isCustom ? form.customBalanceUrl : balanceUrl"
-              :readonly="!isCustom"
-              :placeholder="isCustom ? '如 https://open.bigmodel.cn/api/paas/v4/balance' : balanceUrl"
-              @update:model-value="(v) => (form.customBalanceUrl = String(v))"
-            />
-          </div>
+
         </div>
 
         <!-- 自动查询余量 -->

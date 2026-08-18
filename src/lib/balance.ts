@@ -30,12 +30,30 @@ export const BALANCE_PROVIDERS: Record<string, { label: string; apiBase: string;
     apiBase: 'https://open.bigmodel.cn/api/paas/v4',
     balancePath: '/balance',
   },
-  // 小米 MiMo：余额接口在控制台（platform.xiaomimimo.com/api/v1/balance），
-  // 需登录 Cookie 鉴权（非 API Key）且无 CORS → 浏览器无法自动查询，balancePath 置空（手动维护余额）
+  kimi: {
+    label: 'Kimi',
+    apiBase: 'https://api.moonshot.cn',
+    balancePath: '/v1/users/me/balance',
+  },
   xiaomi: {
     label: '小米 MiMo',
     apiBase: 'https://api.xiaomimimo.com',
     balancePath: '',
+  },
+  rightcode: {
+    label: 'Right Code',
+    apiBase: 'https://api.rightcode.ai',
+    balancePath: '/v1/balance',
+  },
+  pixelapi: {
+    label: 'Pixel API',
+    apiBase: 'https://api.pixelapi.com',
+    balancePath: '/v1/balance',
+  },
+  shareapi: {
+    label: 'Share API',
+    apiBase: 'https://api.shareapi.com',
+    balancePath: '/v1/balance',
   },
 }
 
@@ -44,7 +62,6 @@ export const BALANCE_PROVIDER_OPTIONS = [
     value: key,
     label: BALANCE_PROVIDERS[key].label,
   })),
-  { value: 'custom', label: '自定义 / 中转站' },
 ]
 
 /** 由平台预设生成余额查询 URL；custom 返回自定义 URL */

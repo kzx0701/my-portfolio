@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue'
+import { reactive, watch } from 'vue'
 import { Button, Dialog, Input, Label, Select, Textarea } from '@/components/ui'
 import DatePicker from '@/components/DatePicker.vue'
 import { toast } from '@/lib/toast'
-import { currentDate, PAYMENT_METHOD_OPTIONS, type AiUsageRecord, type AiUsageRecordInput } from '@/modules/ai/types'
 import { useAiStore } from '@/modules/ai/store'
+import { CONSUMPTION_TYPE_OPTIONS, currentDate, PAYMENT_METHOD_OPTIONS, SERVICE_TYPE_OPTIONS, type AiUsageRecord, type AiUsageRecordInput } from '@/modules/ai/types'
 
 const props = defineProps<{
   open: boolean
@@ -21,20 +21,21 @@ const emit = defineEmits<{
 const store = useAiStore()
 
 /** 工具选项（消费归属） */
-const serviceOptions = computed(() =>
-  store.services.map((s) => ({ value: s.id, label: s.name })),
-)
+const serviceOptions = SERVICE_TYPE_OPTIONS
 
-const form = reactive<
-  Omit<AiUsageRecordInput, 'amount' | 'service_id'> & {
-    service_id: string | null
-    amount: number | ''
-  }
->({
-  service_id: null,
+const form = reactive<{
+  service_type: string
+  usage_date: string
+  amount: number | ''
+  payment_method: string | null
+  consumption_type: string | null
+  note: string | null
+}>({
+  service_type: 'deepseek',
   usage_date: currentDate(),
   amount: '',
   payment_method: null,
+  consumption_type: null,
   note: null,
 })
 
@@ -42,20 +43,23 @@ watch(
   () => props.open,
   (open) => {
     if (open) {
-      form.service_id = props.record?.service_id ?? store.services[0]?.id ?? null
+      // 编辑时从 service_id 反查 service_type
+      if (props.record?.service_id) {
+        const svc = store.services.find((s) => s.id === props.record!.service_id)
+        form.service_type = svc?.service_type ?? 'deepseek'
+      } else {
+        form.service_type = 'deepseek'
+      }
       form.usage_date = props.record?.usage_date ?? currentDate()
       form.amount = props.record?.amount ?? ''
       form.payment_method = props.record?.payment_method ?? null
+      form.consumption_type = props.record?.consumption_type ?? null
       form.note = props.record?.note ?? null
     }
   },
 )
 
-function handleSubmit() {
-  if (!form.service_id) {
-    toast('请选择工具', 'error')
-    return
-  }
+async function handleSubmit() {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(form.usage_date)) {
     toast('请选择消费日期', 'error')
     return
@@ -64,11 +68,33 @@ function handleSubmit() {
     toast('请填写消费金额（¥）', 'error')
     return
   }
+
+  // 查找或创建对应的工具记录
+  let service = store.services.find((s) => s.service_type === form.service_type)
+  if (!service) {
+    // 自动创建工具记录
+    const meta = SERVICE_TYPE_OPTIONS.find((o) => o.value === form.service_type)
+    service = await store.createService({
+      name: meta?.label ?? form.service_type,
+      service_type: form.service_type as any,
+      kind: 'model_api',
+      plan: null,
+      base_url: null,
+      balance_query_url: null,
+      balance: null,
+      balance_updated_at: null,
+      quota_limit: null,
+      quota_reset_time: null,
+      note: null,
+    })
+  }
+
   emit('submit', {
-    service_id: form.service_id,
+    service_id: service.id,
     usage_date: form.usage_date,
     amount: Number(form.amount),
     payment_method: form.payment_method,
+    consumption_type: form.consumption_type,
     note: form.note?.trim() || null,
   })
 }
@@ -85,7 +111,7 @@ function handleSubmit() {
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="space-y-2">
           <Label for="usage-service">工具 *</Label>
-          <Select id="usage-service" v-model="form.service_id" :options="serviceOptions" placeholder="选择工具" />
+          <Select id="usage-service" v-model="form.service_type" :options="serviceOptions" placeholder="选择工具" />
         </div>
         <div class="space-y-2">
           <Label for="usage-date">消费日期 *</Label>
@@ -110,9 +136,15 @@ function handleSubmit() {
         </div>
       </div>
 
-      <div class="space-y-2">
-        <Label for="usage-payment">支付方式</Label>
-        <Select id="usage-payment" v-model="form.payment_method" :options="PAYMENT_METHOD_OPTIONS" placeholder="选择支付方式" />
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="space-y-2">
+          <Label for="usage-payment">支付方式</Label>
+          <Select id="usage-payment" v-model="form.payment_method" :options="PAYMENT_METHOD_OPTIONS" placeholder="选择支付方式" />
+        </div>
+        <div class="space-y-2">
+          <Label for="usage-type">消费类型</Label>
+          <Select id="usage-type" v-model="form.consumption_type" :options="CONSUMPTION_TYPE_OPTIONS" placeholder="选择消费类型" />
+        </div>
       </div>
 
       <div class="space-y-2">

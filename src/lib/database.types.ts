@@ -38,14 +38,13 @@ export type KnowledgeCategoryLiteral = 'frontend' | 'backend' | 'ai' | 'tools' |
 
 /** AI 工具类型（ai_services.service_type，前端 SERVICE_TYPE_META 预设：Agent 工具 workbuddy/trae/other，模型 API 平台 deepseek/zhipu/xiaomi/relay/custom，库中无 check 约束可扩展） */
 export type AiServiceTypeLiteral =
-  | 'workbuddy'
-  | 'trae'
-  | 'relay'
-  | 'other'
   | 'deepseek'
   | 'zhipu'
+  | 'kimi'
   | 'xiaomi'
-  | 'custom'
+  | 'rightcode'
+  | 'pixelapi'
+  | 'shareapi'
 
 /** AI 工具形态（ai_services.kind，前端 TOOL_KIND_META 预设：model_api 官方模型 API / agent Agent 工具） */
 export type AiServiceKindLiteral = 'model_api' | 'agent'
@@ -418,6 +417,7 @@ export type Database = {
           usage_date: string
           amount: number
           payment_method: string | null
+          consumption_type: string | null
           note: string | null
           created_at: string
           updated_at: string
@@ -429,6 +429,7 @@ export type Database = {
           usage_date?: string
           amount?: number
           payment_method?: string | null
+          consumption_type?: string | null
           note?: string | null
           created_at?: string
           updated_at?: string
@@ -440,6 +441,7 @@ export type Database = {
           usage_date?: string
           amount?: number
           payment_method?: string | null
+          consumption_type?: string | null
           note?: string | null
           created_at?: string
           updated_at?: string

@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import type { EChartsCoreOption } from 'echarts/core'
 import EChart from '@/components/EChart.vue'
 import { useAiStore } from '@/modules/ai/store'
-import { currentMonth } from '@/modules/ai/types'
+
 
 const store = useAiStore()
 
@@ -25,13 +25,12 @@ function shortMonth(month: string): string {
   return `${Number(m)}月`
 }
 
-/** 近 6 个月（含当月）消费金额合计（按消费日期聚合到月份） */
+/** 今年各月消费金额合计（按消费日期聚合到月份） */
 const trendData = computed(() => {
   const months: string[] = []
-  const now = new Date()
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+  const year = new Date().getFullYear()
+  for (let i = 1; i <= 12; i++) {
+    months.push(`${year}-${String(i).padStart(2, '0')}`)
   }
   const amounts = months.map((m) =>
     store.usage.filter((u) => u.usage_date.slice(0, 7) === m).reduce((sum, u) => sum + u.amount, 0),
@@ -39,12 +38,10 @@ const trendData = computed(() => {
   return { months, amounts }
 })
 
-/** 本月各工具消费分布（按 amount 聚合，环形图） */
+/** 总消费分布（按工具聚合，环形图） */
 const monthDistData = computed(() => {
-  const current = currentMonth()
   const byService: Record<string, number> = {}
   for (const u of store.usage) {
-    if (u.usage_date.slice(0, 7) !== current) continue
     byService[u.service_id] = (byService[u.service_id] ?? 0) + u.amount
   }
   const ids = Object.keys(byService)
@@ -92,7 +89,7 @@ const monthDistOption = computed<EChartsCoreOption>(() => ({
   },
   series: [
     {
-      name: '本月消费',
+      name: '总消费',
       type: 'pie',
       radius: ['45%', '70%'],
       center: ['50%', '45%'],
@@ -109,11 +106,11 @@ const monthDistOption = computed<EChartsCoreOption>(() => ({
 <template>
   <div class="grid gap-4 sm:grid-cols-2">
     <div class="rounded-lg border p-4">
-      <h3 class="mb-2 text-sm font-semibold">近 6 月消费趋势</h3>
+      <h3 class="mb-2 text-sm font-semibold">今年消费趋势</h3>
       <EChart :option="trendOption" height="260px" />
     </div>
     <div class="rounded-lg border p-4">
-      <h3 class="mb-2 text-sm font-semibold">本月消费分布</h3>
+      <h3 class="mb-2 text-sm font-semibold">总消费分布</h3>
       <EChart :option="monthDistOption" height="260px" />
     </div>
   </div>

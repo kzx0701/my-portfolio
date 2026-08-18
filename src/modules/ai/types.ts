@@ -33,14 +33,6 @@ export const TOOL_KIND_OPTIONS = Object.keys(TOOL_KIND_META).map((value) => ({
 
 /** AI 工具类型（service_type：Agent 工具存 workbuddy/trae/other；模型 API 存平台 deepseek/zhipu/relay/custom；无 check 可扩展） */
 export const SERVICE_TYPE_META: Record<string, { label: string; badgeClass: string }> = {
-  workbuddy: {
-    label: 'WorkBuddy',
-    badgeClass: 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-400',
-  },
-  trae: {
-    label: 'Trae',
-    badgeClass: 'border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-400',
-  },
   deepseek: {
     label: 'DeepSeek',
     badgeClass: 'border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-400',
@@ -49,21 +41,25 @@ export const SERVICE_TYPE_META: Record<string, { label: string; badgeClass: stri
     label: '智谱 GLM',
     badgeClass: 'border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
   },
+  kimi: {
+    label: 'Kimi',
+    badgeClass: 'border-purple-500/30 bg-purple-500/10 text-purple-700 dark:text-purple-400',
+  },
   xiaomi: {
     label: '小米 MiMo',
     badgeClass: 'border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-400',
   },
-  relay: {
-    label: '中转站',
-    badgeClass: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400',
+  rightcode: {
+    label: 'Right Code',
+    badgeClass: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
   },
-  custom: {
-    label: '自定义',
-    badgeClass: 'border-teal-500/30 bg-teal-500/10 text-teal-700 dark:text-teal-400',
+  pixelapi: {
+    label: 'Pixel API',
+    badgeClass: 'border-pink-500/30 bg-pink-500/10 text-pink-700 dark:text-pink-400',
   },
-  other: {
-    label: '其他',
-    badgeClass: 'border-border bg-muted text-muted-foreground',
+  shareapi: {
+    label: 'Share API',
+    badgeClass: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-400',
   },
 }
 
@@ -150,4 +146,27 @@ export function maskKey(value: string | null): string {
   if (!value) return '—'
   if (value.length <= 8) return '****'
   return `${value.slice(0, 4)}****${value.slice(-4)}`
+}
+
+/** 消费类型（ai_usage_records.consumption_type） */
+export const CONSUMPTION_TYPE_META: Record<string, { label: string; badgeClass: string }> = {
+  recharge: {
+    label: '充值',
+    badgeClass: 'border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-400',
+  },
+  subscription: {
+    label: '订阅',
+    badgeClass: 'border-purple-500/30 bg-purple-500/10 text-purple-700 dark:text-purple-400',
+  },
+}
+
+export const CONSUMPTION_TYPE_OPTIONS = Object.keys(CONSUMPTION_TYPE_META).map((value) => ({
+  value,
+  label: CONSUMPTION_TYPE_META[value].label,
+}))
+
+/** 消费类型标签与样式；未选择返回 null */
+export function consumptionTypeMeta(type: string | null): { label: string; badgeClass: string } | null {
+  if (type && CONSUMPTION_TYPE_META[type]) return CONSUMPTION_TYPE_META[type]
+  return null
 }

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { Pencil, Plus, Receipt, RotateCw, Trash2 } from '@lucide/vue'
-import { Button, Select, Skeleton, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
+import { Badge, Button, Select, Skeleton, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { useAiStore } from '@/modules/ai/store'
 import { AiUsageStats, UsageDeleteDialog, UsageFormDialog } from '@/modules/ai/components'
-import { type AiUsageRecord, type AiUsageRecordInput, paymentMethodMeta } from '@/modules/ai/types'
+import { type AiUsageRecord, type AiUsageRecordInput, consumptionTypeMeta, paymentMethodMeta, serviceTypeMeta } from '@/modules/ai/types'
 import { toast } from '@/lib/toast'
 
 const store = useAiStore()
@@ -39,7 +39,8 @@ const filteredUsage = computed(() =>
 
 /** 工具名映射 */
 function serviceName(id: string): string {
-  return store.services.find((s) => s.id === id)?.name ?? '未知工具'
+  const svc = store.services.find((s) => s.id === id)
+  return svc ? serviceTypeMeta(svc.service_type).label : '未知工具'
 }
 
 /** 日期展示（YYYY-MM-DD 原样，便于识别） */
@@ -168,18 +169,20 @@ async function handleDeleteConfirm() {
     <div v-else class="animate-in overflow-hidden rounded-lg border bg-card fade-in slide-in-from-bottom-2 [animation-duration:400ms]">
       <Table class="table-fixed">
         <colgroup>
-          <col width="16%">
-          <col width="16%">
-          <col width="16%">
-          <col width="16%">
-          <col width="16%">
-          <col width="16%">
+          <col width="13%">
+          <col width="13%">
+          <col width="13%">
+          <col width="13%">
+          <col width="13%">
+          <col width="15%">
+          <col width="13%">
         </colgroup>
         <TableHeader>
           <TableRow>
             <TableHead class="whitespace-nowrap">日期</TableHead>
             <TableHead class="whitespace-nowrap">工具</TableHead>
             <TableHead class="whitespace-nowrap">消费金额</TableHead>
+            <TableHead class="whitespace-nowrap">消费类型</TableHead>
             <TableHead class="whitespace-nowrap">支付方式</TableHead>
             <TableHead class="whitespace-nowrap">备注</TableHead>
             <TableHead class="whitespace-nowrap text-center">操作</TableHead>
@@ -192,6 +195,14 @@ async function handleDeleteConfirm() {
               {{ serviceName(u.service_id) }}
             </TableCell>
             <TableCell class="whitespace-nowrap font-medium tabular-nums">{{ amountLabel(u) }}</TableCell>
+            <TableCell class="whitespace-nowrap">
+              <template v-if="consumptionTypeMeta(u.consumption_type)">
+                <Badge variant="outline" :class="consumptionTypeMeta(u.consumption_type)!.badgeClass">
+                  {{ consumptionTypeMeta(u.consumption_type)!.label }}
+                </Badge>
+              </template>
+              <span v-else class="text-muted-foreground">—</span>
+            </TableCell>
             <TableCell class="whitespace-nowrap">
               <template v-if="paymentMethodMeta(u.payment_method)">
                 <span class="inline-flex items-center gap-2 whitespace-nowrap">
@@ -220,7 +231,7 @@ async function handleDeleteConfirm() {
             </TableCell>
           </TableRow>
           <TableRow v-if="filteredUsage.length === 0">
-            <TableCell colspan="6" class="h-24 text-center text-muted-foreground">
+            <TableCell colspan="7" class="h-24 text-center text-muted-foreground">
               没有符合筛选条件的消费记录
             </TableCell>
           </TableRow>
