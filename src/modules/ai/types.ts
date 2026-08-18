@@ -1,0 +1,153 @@
+import type { Database } from '@/lib/database.types'
+import alipayLogo from '@/assets/images/channels/alipay.svg'
+import wechatLogo from '@/assets/images/channels/wechat.svg'
+
+/** AI 工具账号（对应 Supabase 表 ai_services） */
+export type AiService = Database['public']['Tables']['ai_services']['Row']
+
+/** 新建 / 编辑工具的入参 */
+export type AiServiceInput = Omit<AiService, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+
+/** AI 消费记录（对应 Supabase 表 ai_usage_records） */
+export type AiUsageRecord = Database['public']['Tables']['ai_usage_records']['Row']
+
+/** 新建消费记录的入参 */
+export type AiUsageRecordInput = Omit<AiUsageRecord, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+
+/** AI 密钥（对应 Supabase 表 ai_secrets） */
+export type AiSecret = Database['public']['Tables']['ai_secrets']['Row']
+
+/** 新建 / 编辑密钥的入参 */
+export type AiSecretInput = Omit<AiSecret, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+
+/** AI 工具形态（kind：model_api 官方模型 API / agent Agent 工具；表单据此切换添加流程） */
+export const TOOL_KIND_META: Record<string, { label: string }> = {
+  model_api: { label: '模型 API' },
+  agent: { label: 'Agent 工具' },
+}
+
+export const TOOL_KIND_OPTIONS = Object.keys(TOOL_KIND_META).map((value) => ({
+  value,
+  label: TOOL_KIND_META[value].label,
+}))
+
+/** AI 工具类型（service_type：Agent 工具存 workbuddy/trae/other；模型 API 存平台 deepseek/zhipu/relay/custom；无 check 可扩展） */
+export const SERVICE_TYPE_META: Record<string, { label: string; badgeClass: string }> = {
+  workbuddy: {
+    label: 'WorkBuddy',
+    badgeClass: 'border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-400',
+  },
+  trae: {
+    label: 'Trae',
+    badgeClass: 'border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-400',
+  },
+  deepseek: {
+    label: 'DeepSeek',
+    badgeClass: 'border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-400',
+  },
+  zhipu: {
+    label: '智谱 GLM',
+    badgeClass: 'border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
+  },
+  xiaomi: {
+    label: '小米 MiMo',
+    badgeClass: 'border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-400',
+  },
+  relay: {
+    label: '中转站',
+    badgeClass: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400',
+  },
+  custom: {
+    label: '自定义',
+    badgeClass: 'border-teal-500/30 bg-teal-500/10 text-teal-700 dark:text-teal-400',
+  },
+  other: {
+    label: '其他',
+    badgeClass: 'border-border bg-muted text-muted-foreground',
+  },
+}
+
+export const SERVICE_TYPE_OPTIONS = Object.keys(SERVICE_TYPE_META).map((value) => ({
+  value,
+  label: SERVICE_TYPE_META[value].label,
+}))
+
+/** 工具类型标签文案与徽章样式；未选择返回「其他」 */
+export function serviceTypeMeta(type: string | null): { label: string; badgeClass: string } {
+  if (type && SERVICE_TYPE_META[type]) return SERVICE_TYPE_META[type]
+  return SERVICE_TYPE_META.other
+}
+
+/** 余额新鲜度判定结果 */
+export interface BalanceFresh {
+  /** 是否已过期（超过 7 天未更新） */
+  stale: boolean
+  label: string
+  badgeClass: string
+}
+
+/** 余额新鲜度提示：记录余额但超过 7 天未更新 → 弱提示可能过期；未记录更新时间 → 提示补录 */
+export function balanceFresh(service: Pick<AiService, 'balance' | 'balance_updated_at'>): BalanceFresh | null {
+  if (service.balance === null || service.balance === undefined) return null
+  if (!service.balance_updated_at) {
+    return {
+      stale: false,
+      label: '未记录更新时间',
+      badgeClass: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400',
+    }
+  }
+  const updated = new Date(service.balance_updated_at)
+  if (Number.isNaN(updated.getTime())) return null
+  const days = Math.floor((Date.now() - updated.getTime()) / 86400000)
+  if (days > 7) {
+    return {
+      stale: true,
+      label: `余额已 ${days} 天未更新`,
+      badgeClass: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400',
+    }
+  }
+  return {
+    stale: false,
+    label: days === 0 ? '今天更新' : `${days} 天前更新`,
+    badgeClass: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+  }
+}
+
+/** 支付方式（ai_usage_records.payment_method，仅微信/支付宝；logo 本地素材，列表与下拉同构于订单渠道） */
+export const PAYMENT_METHOD_META: Record<string, { label: string; logo: string }> = {
+  alipay: { label: '支付宝', logo: alipayLogo },
+  wechat: { label: '微信', logo: wechatLogo },
+}
+
+export const PAYMENT_METHOD_OPTIONS = Object.keys(PAYMENT_METHOD_META).map((value) => ({
+  value,
+  label: PAYMENT_METHOD_META[value].label,
+  icon: PAYMENT_METHOD_META[value].logo,
+}))
+
+/** 支付方式标签与 logo；未选择返回 null */
+export function paymentMethodMeta(method: string | null): { label: string; logo: string } | null {
+  if (method && PAYMENT_METHOD_META[method]) return PAYMENT_METHOD_META[method]
+  return null
+}
+
+/** 当前日期 YYYY-MM-DD（消费记录默认值） */
+export function currentDate(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/** 当前月份 YYYY-MM（消费统计按此聚合过滤） */
+export function currentMonth(): string {
+  return currentDate().slice(0, 7)
+}
+
+/**
+ * 密钥打码：长度 ≤ 8 全打码；否则保留前 4 后 4（如 sk-a1b2****wxyz）
+ * 列表与详情展示用，复制时才取明文（复制后组件不保留明文）
+ */
+export function maskKey(value: string | null): string {
+  if (!value) return '—'
+  if (value.length <= 8) return '****'
+  return `${value.slice(0, 4)}****${value.slice(-4)}`
+}

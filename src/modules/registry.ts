@@ -1,14 +1,18 @@
 import type { Component } from 'vue'
 import {
   Activity,
+  BookOpen,
   ClipboardList,
   FileText,
   FolderKanban,
   HeartPulse,
   LayoutDashboard,
   ListChecks,
+  Receipt,
+  Sparkles,
   Target,
   UserRound,
+  Wrench,
 } from '@lucide/vue'
 
 /**
@@ -82,12 +86,39 @@ export const modules: ModuleMeta[] = [
   },
   // ---- 以下为预留模块，后续确定后开启（enabled: true）即可 ----
   {
+    key: 'knowledge',
+    title: '知识库',
+    description: '沉淀开发心得与知识笔记，分类标签组织，随时检索。',
+    path: '/knowledge',
+    icon: BookOpen,
+    order: 3,
+    active: true,
+    children: [
+      { key: 'knowledge-dashboard', title: '仪表盘', path: '/knowledge', icon: LayoutDashboard },
+      { key: 'knowledge-articles', title: '笔记列表', path: '/knowledge/articles', icon: FileText },
+    ],
+  },
+  {
+    key: 'ai',
+    title: 'AI 中心',
+    description: '管理 AI 工具账号、密钥、消费记录与剩余额度。',
+    path: '/ai',
+    icon: Sparkles,
+    order: 4,
+    active: true,
+    children: [
+      { key: 'ai-dashboard', title: '仪表盘', path: '/ai', icon: LayoutDashboard },
+      { key: 'ai-usage', title: '消费记录', path: '/ai/usage', icon: Receipt },
+      { key: 'ai-tools', title: '工具列表', path: '/ai/tools', icon: Wrench },
+    ],
+  },
+  {
     key: 'journals',
     title: '个人日志',
     description: '记录日常与思考，沉淀知识。（预留模块）',
     path: '/journals',
     icon: FileText,
-    order: 3,
+    order: 5,
     enabled: false,
   },
   {
@@ -96,7 +127,7 @@ export const modules: ModuleMeta[] = [
     description: '展示与管理自己做过的项目。（预留模块）',
     path: '/projects',
     icon: FolderKanban,
-    order: 4,
+    order: 6,
     enabled: false,
   },
   {
@@ -105,7 +136,7 @@ export const modules: ModuleMeta[] = [
     description: '各模块数据聚合总览。（预留模块）',
     path: '/dashboard',
     icon: LayoutDashboard,
-    order: 5,
+    order: 7,
     enabled: false,
   },
 ]

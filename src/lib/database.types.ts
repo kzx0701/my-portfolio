@@ -33,6 +33,23 @@ export type HealthGoalTypeLiteral = 'fat_loss' | 'muscle_gain' | 'maintain'
 /** 健康目标状态（health_goal.status check 约束） */
 export type HealthGoalStatusLiteral = 'in_progress' | 'completed' | 'cancelled'
 
+/** 笔记分类（knowledge_articles.category，前端 CATEGORY_META 预设，库中无 check 约束可扩展） */
+export type KnowledgeCategoryLiteral = 'frontend' | 'backend' | 'ai' | 'tools' | 'notes'
+
+/** AI 工具类型（ai_services.service_type，前端 SERVICE_TYPE_META 预设：Agent 工具 workbuddy/trae/other，模型 API 平台 deepseek/zhipu/xiaomi/relay/custom，库中无 check 约束可扩展） */
+export type AiServiceTypeLiteral =
+  | 'workbuddy'
+  | 'trae'
+  | 'relay'
+  | 'other'
+  | 'deepseek'
+  | 'zhipu'
+  | 'xiaomi'
+  | 'custom'
+
+/** AI 工具形态（ai_services.kind，前端 TOOL_KIND_META 预设：model_api 官方模型 API / agent Agent 工具） */
+export type AiServiceKindLiteral = 'model_api' | 'agent'
+
 export type Database = {
   public: {
     Tables: {
@@ -280,6 +297,217 @@ export type Database = {
             columns: ['user_id']
             isOneToOne: false
             referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      knowledge_articles: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          category: KnowledgeCategoryLiteral | null
+          tags: string[]
+          content: string
+          is_pinned: boolean
+          is_archived: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          category?: KnowledgeCategoryLiteral | null
+          tags?: string[]
+          content?: string
+          is_pinned?: boolean
+          is_archived?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          category?: KnowledgeCategoryLiteral | null
+          tags?: string[]
+          content?: string
+          is_pinned?: boolean
+          is_archived?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'knowledge_articles_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ai_services: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          service_type: AiServiceTypeLiteral | null
+          kind: AiServiceKindLiteral | null
+          plan: string | null
+          base_url: string | null
+          balance_query_url: string | null
+          balance: number | null
+          balance_updated_at: string | null
+          quota_limit: number | null
+          quota_reset_time: string | null
+          note: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          service_type?: AiServiceTypeLiteral | null
+          kind?: AiServiceKindLiteral | null
+          plan?: string | null
+          base_url?: string | null
+          balance_query_url?: string | null
+          balance?: number | null
+          balance_updated_at?: string | null
+          quota_limit?: number | null
+          quota_reset_time?: string | null
+          note?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          service_type?: AiServiceTypeLiteral | null
+          kind?: AiServiceKindLiteral | null
+          plan?: string | null
+          base_url?: string | null
+          balance_query_url?: string | null
+          balance?: number | null
+          balance_updated_at?: string | null
+          quota_limit?: number | null
+          quota_reset_time?: string | null
+          note?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ai_services_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ai_usage_records: {
+        Row: {
+          id: string
+          user_id: string
+          service_id: string
+          usage_date: string
+          amount: number
+          payment_method: string | null
+          note: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          service_id: string
+          usage_date?: string
+          amount?: number
+          payment_method?: string | null
+          note?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          service_id?: string
+          usage_date?: string
+          amount?: number
+          payment_method?: string | null
+          note?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ai_usage_records_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ai_usage_records_service_id_fkey'
+            columns: ['service_id']
+            isOneToOne: false
+            referencedRelation: 'ai_services'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ai_secrets: {
+        Row: {
+          id: string
+          user_id: string
+          service_id: string | null
+          name: string
+          service: string | null
+          key_value: string | null
+          note: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          service_id?: string | null
+          name: string
+          service?: string | null
+          key_value?: string | null
+          note?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          service_id?: string | null
+          name?: string
+          service?: string | null
+          key_value?: string | null
+          note?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ai_secrets_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ai_secrets_service_id_fkey'
+            columns: ['service_id']
+            isOneToOne: false
+            referencedRelation: 'ai_services'
             referencedColumns: ['id']
           },
         ]

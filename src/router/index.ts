@@ -55,6 +55,36 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/health/HealthGoalView.vue'),
         meta: { title: '健康目标' },
       },
+      {
+        path: 'knowledge',
+        name: 'knowledge',
+        component: () => import('@/views/knowledge/KnowledgeDashboardView.vue'),
+        meta: { title: '仪表盘' },
+      },
+      {
+        path: 'knowledge/articles',
+        name: 'knowledge-articles',
+        component: () => import('@/views/knowledge/KnowledgeArticlesView.vue'),
+        meta: { title: '笔记列表' },
+      },
+      {
+        path: 'ai',
+        name: 'ai',
+        component: () => import('@/views/ai/AiDashboardView.vue'),
+        meta: { title: '仪表盘' },
+      },
+      {
+        path: 'ai/usage',
+        name: 'ai-usage',
+        component: () => import('@/views/ai/AiUsageView.vue'),
+        meta: { title: '消费记录' },
+      },
+      {
+        path: 'ai/tools',
+        name: 'ai-tools',
+        component: () => import('@/views/ai/AiToolsView.vue'),
+        meta: { title: '工具列表' },
+      },
       // ---- 预留模块路由：后续确定后在 modules/registry.ts 开启并在此挂载 ----
     ],
   },

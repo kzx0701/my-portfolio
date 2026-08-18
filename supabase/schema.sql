@@ -415,3 +415,253 @@ create policy "health_profile_delete_own" on public.health_profile
 
 -- ---------- 24. 权限：仅授予登录用户（authenticated） ----------
 grant select, insert, update, delete on table public.health_profile to authenticated;
+
+-- ============================================================
+-- 知识库（knowledge_articles / knowledge_secrets）
+-- ============================================================
+
+-- ---------- 25. 创建 knowledge_articles 表（笔记：开发心得 / 知识沉淀） ----------
+-- category：单选分类（前端 CATEGORY_META 预设：frontend/backend/ai/tools/notes，可扩展故不加 check，与 payments.stage 同思路）
+-- tags：多标签（text[]，自由组织）
+-- content：Markdown 正文
+-- is_pinned：置顶（列表置顶展示）
+-- is_archived：归档（从默认列表隐藏，保留数据可查）
+create table if not exists public.knowledge_articles (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  title text not null,
+  category text,
+  tags text[] not null default '{}',
+  content text not null default '',
+  is_pinned boolean not null default false,
+  is_archived boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- ---------- 26. knowledge_articles 更新时间触发器（复用 handle_updated_at 函数） ----------
+drop trigger if exists set_knowledge_articles_updated_at on public.knowledge_articles;
+create trigger set_knowledge_articles_updated_at
+  before update on public.knowledge_articles
+  for each row
+  execute function public.handle_updated_at();
+
+-- ---------- 27. knowledge_articles 索引 ----------
+create index if not exists idx_knowledge_articles_user_id on public.knowledge_articles (user_id);
+create index if not exists idx_knowledge_articles_created_at on public.knowledge_articles (created_at desc);
+create index if not exists idx_knowledge_articles_pinned on public.knowledge_articles (user_id, is_pinned);
+
+-- ---------- 28. knowledge_articles RLS：每个用户只能读写自己的笔记 ----------
+alter table public.knowledge_articles enable row level security;
+
+drop policy if exists "knowledge_articles_select_own" on public.knowledge_articles;
+create policy "knowledge_articles_select_own" on public.knowledge_articles
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "knowledge_articles_insert_own" on public.knowledge_articles;
+create policy "knowledge_articles_insert_own" on public.knowledge_articles
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "knowledge_articles_update_own" on public.knowledge_articles;
+create policy "knowledge_articles_update_own" on public.knowledge_articles
+  for update using (auth.uid() = user_id);
+
+drop policy if exists "knowledge_articles_delete_own" on public.knowledge_articles;
+create policy "knowledge_articles_delete_own" on public.knowledge_articles
+  for delete using (auth.uid() = user_id);
+
+-- ---------- 28.1 权限：仅授予登录用户（authenticated），anon 保持无权限（最小权限原则，RLS 兜底） ----------
+grant select, insert, update, delete on table public.knowledge_articles to authenticated;
+
+-- ============================================================
+-- AI 中心（ai_services / ai_usage_records / ai_secrets）
+-- 说明：密钥管理自知识库迁出至本模块（knowledge_secrets 段已移除，
+-- 因其未在线上建表，直接重定义为 ai_secrets，无数据迁移负担）
+-- ============================================================
+
+-- ---------- 29. 创建 ai_services 表（AI 工具账号：余额与周期配额手工维护） ----------
+-- balance：当前剩余额度（积分 / 金额，手工维护）
+-- balance_updated_at：余额最后更新时间（仪表盘按此做新鲜度提示：超 7 天提醒可能过期）
+-- quota_limit / quota_reset_time：周期配额模型（如 WorkBuddy 企业版每月额度 + 重置时间；非周期制工具可空）
+-- service_type：前端 SERVICE_TYPE_META 预设（workbuddy/trae/relay/other），无 check 可扩展
+create table if not exists public.ai_services (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  name text not null,
+  service_type text,
+  kind text,
+  plan text,
+  base_url text,
+  balance_query_url text,
+  balance numeric(12, 2),
+  balance_updated_at timestamptz,
+  quota_limit numeric(12, 2),
+  quota_reset_time timestamptz,
+  note text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- ---------- 29.1 幂等迁移：kind / balance_query_url 列（兼容已建表） ----------
+-- kind：工具形态（model_api 官方模型 API / agent Agent 工具），前端 TOOL_KIND_META 预设
+-- balance_query_url：余额查询接口地址（模型 API 类自动查余量用；Agent 类可空）
+alter table public.ai_services add column if not exists kind text;
+alter table public.ai_services add column if not exists balance_query_url text;
+
+-- ---------- 30. ai_services 更新时间触发器（复用 handle_updated_at 函数） ----------
+drop trigger if exists set_ai_services_updated_at on public.ai_services;
+create trigger set_ai_services_updated_at
+  before update on public.ai_services
+  for each row
+  execute function public.handle_updated_at();
+
+-- ---------- 31. ai_services 索引 ----------
+create index if not exists idx_ai_services_user_id on public.ai_services (user_id);
+create index if not exists idx_ai_services_created_at on public.ai_services (created_at desc);
+
+-- ---------- 32. ai_services RLS：每个用户只能读写自己的 AI 工具 ----------
+alter table public.ai_services enable row level security;
+
+drop policy if exists "ai_services_select_own" on public.ai_services;
+create policy "ai_services_select_own" on public.ai_services
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "ai_services_insert_own" on public.ai_services;
+create policy "ai_services_insert_own" on public.ai_services
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "ai_services_update_own" on public.ai_services;
+create policy "ai_services_update_own" on public.ai_services
+  for update using (auth.uid() = user_id);
+
+drop policy if exists "ai_services_delete_own" on public.ai_services;
+create policy "ai_services_delete_own" on public.ai_services
+  for delete using (auth.uid() = user_id);
+
+-- ---------- 32.1 权限：仅授予登录用户（authenticated），anon 保持无权限（最小权限原则，RLS 兜底） ----------
+grant select, insert, update, delete on table public.ai_services to authenticated;
+
+-- ---------- 33. 创建 ai_usage_records 表（AI 消费记录：手动逐笔添加，统计聚合） ----------
+-- usage_date：消费日期（YYYY-MM-DD，按天记录；同天可多条，不做唯一约束；统计按月聚合取前 7 位）
+-- amount：消费金额（固定人民币，必填，≥0）
+-- payment_method：支付方式（前端 PAYMENT_METHOD_META 预设：alipay/wechat/bank/company/other，无 check 可扩展）
+create table if not exists public.ai_usage_records (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  service_id uuid not null references public.ai_services (id) on delete cascade,
+  usage_date date not null default current_date,
+  amount numeric(12, 2) not null default 0 check (amount >= 0),
+  payment_method text,
+  note text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- ---------- 33.1 幂等迁移：usage_month → usage_date、移除 tokens（兼容已按旧结构建表） ----------
+alter table public.ai_usage_records add column if not exists usage_date date;
+alter table public.ai_usage_records alter column usage_date set default current_date;
+alter table public.ai_usage_records alter column usage_date set not null;
+alter table public.ai_usage_records alter column amount set default 0;
+alter table public.ai_usage_records alter column amount set not null;
+alter table public.ai_usage_records drop column if exists tokens;
+-- 仅当旧表存在 usage_month 列时迁移数据并删除该列（新表结构无此列，直接跳过，避免 42703）
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'ai_usage_records'
+      and column_name = 'usage_month'
+  ) then
+    update public.ai_usage_records
+    set usage_date = to_date(usage_month || '-01', 'YYYY-MM-DD')
+    where usage_date is null and usage_month is not null;
+    alter table public.ai_usage_records drop column usage_month;
+  end if;
+end $$;
+
+-- ---------- 33.2 幂等迁移：payment_method 列（兼容已按旧结构建表） ----------
+alter table public.ai_usage_records add column if not exists payment_method text;
+
+-- ---------- 34. ai_usage_records 更新时间触发器（复用 handle_updated_at 函数） ----------
+drop trigger if exists set_ai_usage_records_updated_at on public.ai_usage_records;
+create trigger set_ai_usage_records_updated_at
+  before update on public.ai_usage_records
+  for each row
+  execute function public.handle_updated_at();
+
+-- ---------- 35. ai_usage_records 索引 ----------
+create index if not exists idx_ai_usage_records_user_id on public.ai_usage_records (user_id);
+create index if not exists idx_ai_usage_records_service_id on public.ai_usage_records (service_id);
+create index if not exists idx_ai_usage_records_date on public.ai_usage_records (usage_date desc);
+
+-- ---------- 36. ai_usage_records RLS：每个用户只能读写自己的消费记录 ----------
+alter table public.ai_usage_records enable row level security;
+
+drop policy if exists "ai_usage_records_select_own" on public.ai_usage_records;
+create policy "ai_usage_records_select_own" on public.ai_usage_records
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "ai_usage_records_insert_own" on public.ai_usage_records;
+create policy "ai_usage_records_insert_own" on public.ai_usage_records
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "ai_usage_records_update_own" on public.ai_usage_records;
+create policy "ai_usage_records_update_own" on public.ai_usage_records
+  for update using (auth.uid() = user_id);
+
+drop policy if exists "ai_usage_records_delete_own" on public.ai_usage_records;
+create policy "ai_usage_records_delete_own" on public.ai_usage_records
+  for delete using (auth.uid() = user_id);
+
+-- ---------- 36.1 权限：仅授予登录用户（authenticated） ----------
+grant select, insert, update, delete on table public.ai_usage_records to authenticated;
+
+-- ---------- 37. 创建 ai_secrets 表（AI 密钥：自知识库迁出，挂所属工具） ----------
+-- service_id：关联 ai_services（可空，on delete set null —— 工具删除后密钥保留）
+-- key_value：明文存储（已确认方案 A：RLS 隔离 + 前端打码展示 + 复制后不残留）
+create table if not exists public.ai_secrets (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  service_id uuid references public.ai_services (id) on delete set null,
+  name text not null,
+  service text,
+  key_value text,
+  note text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- ---------- 38. ai_secrets 更新时间触发器（复用 handle_updated_at 函数） ----------
+drop trigger if exists set_ai_secrets_updated_at on public.ai_secrets;
+create trigger set_ai_secrets_updated_at
+  before update on public.ai_secrets
+  for each row
+  execute function public.handle_updated_at();
+
+-- ---------- 39. ai_secrets 索引 ----------
+create index if not exists idx_ai_secrets_user_id on public.ai_secrets (user_id);
+create index if not exists idx_ai_secrets_service_id on public.ai_secrets (service_id);
+create index if not exists idx_ai_secrets_created_at on public.ai_secrets (created_at desc);
+
+-- ---------- 40. ai_secrets RLS：每个用户只能读写自己的密钥 ----------
+alter table public.ai_secrets enable row level security;
+
+drop policy if exists "ai_secrets_select_own" on public.ai_secrets;
+create policy "ai_secrets_select_own" on public.ai_secrets
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "ai_secrets_insert_own" on public.ai_secrets;
+create policy "ai_secrets_insert_own" on public.ai_secrets
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "ai_secrets_update_own" on public.ai_secrets;
+create policy "ai_secrets_update_own" on public.ai_secrets
+  for update using (auth.uid() = user_id);
+
+drop policy if exists "ai_secrets_delete_own" on public.ai_secrets;
+create policy "ai_secrets_delete_own" on public.ai_secrets
+  for delete using (auth.uid() = user_id);
+
+-- ---------- 40.1 权限：仅授予登录用户（authenticated） ----------
+grant select, insert, update, delete on table public.ai_secrets to authenticated;
