@@ -46,9 +46,10 @@ function updatedLabel(iso: string | null): string {
   const now = new Date()
   const sameDay = d.toDateString() === now.toDateString()
   const sameYear = d.getFullYear() === now.getFullYear()
-  if (sameDay) return `今天 ${pad(d.getHours())}:${pad(d.getMinutes())}`
-  if (sameYear) return `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  const time = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  if (sameDay) return `今天 ${time}`
+  if (sameYear) return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${time}`
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${time}`
 }
 
 async function handleRefresh() {

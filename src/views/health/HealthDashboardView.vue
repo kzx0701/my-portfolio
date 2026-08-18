@@ -151,11 +151,16 @@ function goalTypeLabel(g: HealthGoal): string {
                     {{ goalDaysLeftLabel(calcGoalProgress(g, latestWeight).daysLeft) }}
                   </span>
                 </div>
-                <Progress
-                  :model-value="calcGoalProgress(g, latestWeight).progress ?? 0"
-                  :indicator-style="goalProgressStyle(calcGoalProgress(g, latestWeight).progress)"
-                  class="mt-1.5 h-1.5"
-                />
+                <div class="mt-1.5 flex items-center gap-2">
+                  <Progress
+                    :model-value="calcGoalProgress(g, latestWeight).progress ?? 0"
+                    :indicator-style="goalProgressStyle(calcGoalProgress(g, latestWeight).progress)"
+                    class="h-2 flex-1"
+                  />
+                  <span class="min-w-[2.5rem] text-right text-xs font-semibold tabular-nums text-primary">
+                    {{ calcGoalProgress(g, latestWeight).progress ?? 0 }}%
+                  </span>
+                </div>
                 <p class="mt-1 text-xs text-muted-foreground tabular-nums">
                   {{
                     calcGoalProgress(g, latestWeight).current !== null
