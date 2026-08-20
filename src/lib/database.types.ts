@@ -36,9 +36,10 @@ export type HealthGoalStatusLiteral = 'in_progress' | 'completed' | 'cancelled'
 /** 笔记分类（knowledge_articles.category，前端 CATEGORY_META 预设，库中无 check 约束可扩展） */
 export type KnowledgeCategoryLiteral = 'frontend' | 'backend' | 'ai' | 'tools' | 'notes'
 
-/** AI 工具类型（ai_services.service_type，前端 SERVICE_TYPE_META 预设：Agent 工具 workbuddy/trae/other，模型 API 平台 deepseek/zhipu/xiaomi/relay/custom，库中无 check 约束可扩展） */
+/** AI 工具类型（ai_services.service_type，前端 SERVICE_TYPE_META 预设平台，库中无 check 约束可扩展） */
 export type AiServiceTypeLiteral =
   | 'deepseek'
+  | 'chatgpt'
   | 'zhipu'
   | 'kimi'
   | 'xiaomi'
@@ -521,6 +522,80 @@ export type Database = {
             columns: ['service_id']
             isOneToOne: false
             referencedRelation: 'ai_services'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ai_chat_conversations: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ai_chat_conversations_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ai_chat_messages: {
+        Row: {
+          id: string
+          conversation_id: string
+          user_id: string
+          role: 'user' | 'assistant' | 'system'
+          content: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          conversation_id: string
+          user_id: string
+          role: 'user' | 'assistant' | 'system'
+          content?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          conversation_id?: string
+          user_id?: string
+          role?: 'user' | 'assistant' | 'system'
+          content?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ai_chat_messages_conversation_id_fkey'
+            columns: ['conversation_id']
+            isOneToOne: false
+            referencedRelation: 'ai_chat_conversations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ai_chat_messages_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
             referencedColumns: ['id']
           },
         ]

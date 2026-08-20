@@ -667,3 +667,77 @@ create policy "ai_secrets_delete_own" on public.ai_secrets
 grant select, insert, update, delete on table public.ai_secrets to authenticated;
 -- ---------- 29.2 添加控制台 URL 字段 ----------
 alter table public.ai_services add column if not exists console_url text;
+
+-- ============================================================
+-- AI 对话（ai_chat_conversations / ai_chat_messages）
+-- ============================================================
+
+-- ---------- 41. 创建 ai_chat_conversations 表（对话会话） ----------
+create table if not exists public.ai_chat_conversations (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  title text not null default '新对话',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- ---------- 42. 创建 ai_chat_messages 表（对话消息） ----------
+-- role: user / assistant / system
+-- content: 消息内容（支持 markdown）
+create table if not exists public.ai_chat_messages (
+  id uuid primary key default gen_random_uuid(),
+  conversation_id uuid not null references public.ai_chat_conversations (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  role text not null check (role in ('user', 'assistant', 'system')),
+  content text not null default '',
+  created_at timestamptz not null default now()
+);
+
+-- ---------- 43. 更新时间触发器 ----------
+drop trigger if exists set_ai_chat_conversations_updated_at on public.ai_chat_conversations;
+create trigger set_ai_chat_conversations_updated_at
+  before update on public.ai_chat_conversations
+  for each row
+  execute function public.handle_updated_at();
+
+-- ---------- 44. 索引 ----------
+create index if not exists idx_ai_chat_conversations_user_id on public.ai_chat_conversations (user_id);
+create index if not exists idx_ai_chat_conversations_updated_at on public.ai_chat_conversations (updated_at desc);
+create index if not exists idx_ai_chat_messages_conversation_id on public.ai_chat_messages (conversation_id);
+create index if not exists idx_ai_chat_messages_created_at on public.ai_chat_messages (created_at);
+
+-- ---------- 45. RLS ----------
+alter table public.ai_chat_conversations enable row level security;
+alter table public.ai_chat_messages enable row level security;
+
+drop policy if exists "ai_chat_conversations_select_own" on public.ai_chat_conversations;
+create policy "ai_chat_conversations_select_own" on public.ai_chat_conversations
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "ai_chat_conversations_insert_own" on public.ai_chat_conversations;
+create policy "ai_chat_conversations_insert_own" on public.ai_chat_conversations
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "ai_chat_conversations_update_own" on public.ai_chat_conversations;
+create policy "ai_chat_conversations_update_own" on public.ai_chat_conversations
+  for update using (auth.uid() = user_id);
+
+drop policy if exists "ai_chat_conversations_delete_own" on public.ai_chat_conversations;
+create policy "ai_chat_conversations_delete_own" on public.ai_chat_conversations
+  for delete using (auth.uid() = user_id);
+
+drop policy if exists "ai_chat_messages_select_own" on public.ai_chat_messages;
+create policy "ai_chat_messages_select_own" on public.ai_chat_messages
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "ai_chat_messages_insert_own" on public.ai_chat_messages;
+create policy "ai_chat_messages_insert_own" on public.ai_chat_messages
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "ai_chat_messages_delete_own" on public.ai_chat_messages;
+create policy "ai_chat_messages_delete_own" on public.ai_chat_messages
+  for delete using (auth.uid() = user_id);
+
+-- ---------- 46. 权限 ----------
+grant select, insert, update, delete on table public.ai_chat_conversations to authenticated;
+grant select, insert, delete on table public.ai_chat_messages to authenticated;

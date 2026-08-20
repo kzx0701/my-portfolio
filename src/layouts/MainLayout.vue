@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui";
 import ProfileDialog from "@/components/ProfileDialog.vue";
+import { AiChatButton, AiChatDialog } from "@/components/ai-chat";
 import { activeModules } from "@/modules/registry";
 import { useAuthStore } from "@/stores/auth";
 import logoUrl from "@/assets/images/logo.png";
@@ -226,5 +227,9 @@ async function handleLogout() {
 
     <!-- 编辑资料弹窗 -->
     <ProfileDialog v-model:open="profileOpen" />
+
+    <!-- AI 对话 -->
+    <AiChatButton />
+    <AiChatDialog />
   </div>
 </template>

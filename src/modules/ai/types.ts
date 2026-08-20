@@ -32,11 +32,15 @@ export const TOOL_KIND_OPTIONS = Object.keys(TOOL_KIND_META).map((value) => ({
   label: TOOL_KIND_META[value].label,
 }))
 
-/** AI 工具类型（service_type：Agent 工具存 workbuddy/trae/other；模型 API 存平台 deepseek/zhipu/relay/custom；无 check 可扩展） */
+/** AI 工具类型（service_type：对应 SERVICE_TYPE_META 中的预设平台；无 check 可扩展） */
 export const SERVICE_TYPE_META: Record<string, { label: string; badgeClass: string }> = {
   deepseek: {
     label: 'DeepSeek',
     badgeClass: 'border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-400',
+  },
+  chatgpt: {
+    label: 'Chat GPT',
+    badgeClass: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
   },
   zhipu: {
     label: '智谱 GLM',
