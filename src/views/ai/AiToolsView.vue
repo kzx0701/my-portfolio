@@ -1,19 +1,15 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { KeyRound, Plus, RefreshCw, RotateCw, Sparkles, Wrench } from '@lucide/vue'
-import { Badge, Button, Skeleton } from '@/components/ui'
+import { Plus, RotateCw, Sparkles, Wrench } from '@lucide/vue'
+import { Button, Skeleton } from '@/components/ui'
 import { useAiStore } from '@/modules/ai/store'
 import {
   ToolDeleteDialog,
   ToolDetailDialog,
   ToolFormDialog,
+  ToolTable,
 } from '@/modules/ai/components'
-import {
-  balanceFresh,
-  serviceTypeMeta,
-  type AiService,
-  type AiServiceInput,
-} from '@/modules/ai/types'
+import { type AiService, type AiServiceInput } from '@/modules/ai/types'
 import { toast } from '@/lib/toast'
 
 const store = useAiStore()
@@ -25,31 +21,15 @@ const deleteTarget = ref<AiService | null>(null)
 const submitting = ref(false)
 const deleting = ref(false)
 const refreshing = ref(false)
+const refreshingBalanceId = ref<string | null>(null)
 
 onMounted(() => {
   store.fetchServices()
   store.fetchSecrets()
 })
 
-/** 余额展示：有周期额度显示 剩余/总额；否则单值 */
-function balanceLabel(s: AiService): string {
-  if (s.balance === null) return '未维护'
-  return s.quota_limit !== null ? `${s.balance} / ${s.quota_limit}` : `${s.balance}`
-}
-
-/** 余额更新时间短展示 */
-function updatedLabel(iso: string | null): string {
-  if (!iso) return '—'
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return iso
-  const pad = (n: number) => String(n).padStart(2, '0')
-  const now = new Date()
-  const sameDay = d.toDateString() === now.toDateString()
-  const sameYear = d.getFullYear() === now.getFullYear()
-  const time = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
-  if (sameDay) return `今天 ${time}`
-  if (sameYear) return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${time}`
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${time}`
+function openConsole(url: string) {
+  window.open(url, '_blank')
 }
 
 async function handleRefresh() {
@@ -80,15 +60,24 @@ async function handleSubmit(payload: { input: AiServiceInput; apiKey: string | n
   try {
     if (editingService.value) {
       await store.updateService(editingService.value.id, input)
-      // 编辑时若重新填了 Key，更新为工具的新 Key
+      // 编辑时若重新填了 Key，更新或创建密钥
       if (apiKey) {
-        await store.createSecret({
-          service_id: editingService.value.id,
-          name: `${input.name} API Key`,
-          service: input.service_type,
-          key_value: apiKey,
-          note: null,
-        })
+        const existingSecret = store.secretsOf(editingService.value.id).find((s) => s.key_value)
+        if (existingSecret) {
+          await store.updateSecret(existingSecret.id, {
+            name: `${input.name} API Key`,
+            service: input.service_type,
+            key_value: apiKey,
+          })
+        } else {
+          await store.createSecret({
+            service_id: editingService.value.id,
+            name: `${input.name} API Key`,
+            service: input.service_type,
+            key_value: apiKey,
+            note: null,
+          })
+        }
       }
       toast('工具已更新', 'success')
     } else {
@@ -116,11 +105,16 @@ async function handleSubmit(payload: { input: AiServiceInput; apiKey: string | n
 
 /** 刷新指定工具余量（模型 API 类：用关联 Key 调余额接口） */
 async function handleRefreshBalance(service: AiService) {
-  const result = await store.refreshBalance(service)
-  if (result.ok) {
-    toast(`余量已刷新：${result.balance !== null ? new Intl.NumberFormat('zh-CN').format(result.balance) : '—'}`, 'success')
-  } else {
-    toast(result.error ?? '刷新失败', 'error')
+  refreshingBalanceId.value = service.id
+  try {
+    const result = await store.refreshBalance(service)
+    if (result.ok) {
+      toast(`余量已刷新：${result.balance !== null ? Number(result.balance).toFixed(2) : '—'}`, 'success')
+    } else {
+      toast(result.error ?? '刷新失败', 'error')
+    }
+  } finally {
+    refreshingBalanceId.value = null
   }
 }
 
@@ -168,69 +162,39 @@ async function handleDeleteConfirm() {
       </div>
     </div>
 
-    <!-- 工具卡片 -->
-    <div v-if="store.loading && store.services.length === 0" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <Skeleton v-for="i in 6" :key="i" class="h-44 rounded-xl" />
+    <!-- 工具列表 -->
+    <div v-if="store.loading && store.services.length === 0" class="overflow-hidden rounded-lg border bg-card">
+      <div class="flex h-12 items-center border-b bg-muted/30 px-2">
+        <div v-for="i in 8" :key="`h-${i}`" class="w-[12.5%] px-2">
+          <Skeleton class="h-4 w-16" />
+        </div>
+      </div>
+      <div v-for="r in 5" :key="`r-${r}`" class="flex h-12 items-center border-b px-2 last:border-0">
+        <div v-for="c in 8" :key="`c-${c}`" class="w-[12.5%] px-2">
+          <Skeleton class="h-4 w-3/4" />
+        </div>
+      </div>
     </div>
     <div v-else-if="store.services.length === 0" class="rounded-lg border border-dashed py-16 text-center">
       <Wrench class="mx-auto h-10 w-10 text-muted-foreground/60" />
       <p class="mt-3 font-medium">还没有 AI 工具</p>
-      <p class="mt-1 text-sm text-muted-foreground">登记 WorkBuddy、Trae、中转站等工具，维护剩余额度与密钥</p>
+      <p class="mt-1 text-sm text-muted-foreground">添加你使用的 AI 工具，统一管理额度与密钥</p>
       <Button class="mt-4" @click="openCreate">
         <Plus class="h-4 w-4" />
         添加第一个工具
       </Button>
     </div>
-    <div v-else class="animate-in grid gap-4 fade-in slide-in-from-bottom-2 [animation-duration:400ms] sm:grid-cols-2 lg:grid-cols-3">
-      <button
-        v-for="s in store.services"
-        :key="s.id"
-        class="group relative flex flex-col overflow-hidden rounded-xl border bg-card p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
-        @click="viewingService = s"
-      >
-        <div class="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-sky-400 to-teal-500 opacity-0 transition-opacity group-hover:opacity-100" />
-        <div class="flex items-start justify-between gap-2">
-          <div class="flex flex-wrap items-center gap-2">
-            <Badge variant="outline" :class="serviceTypeMeta(s.service_type).badgeClass">
-              {{ serviceTypeMeta(s.service_type).label }}
-            </Badge>
-            <Badge variant="secondary" class="font-normal">
-              {{ s.kind === 'model_api' ? '模型 API' : 'Agent' }}
-            </Badge>
-          </div>
-          <span class="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-            <KeyRound class="h-3.5 w-3.5" />
-            {{ store.secretsOf(s.id).length }}
-          </span>
-        </div>
-        <h3 class="mt-3 font-semibold leading-snug group-hover:text-primary">{{ s.name }}</h3>
-        <p class="mt-2 text-2xl font-bold tabular-nums tracking-tight">{{ balanceLabel(s) }}</p>
-        <div class="mt-2 flex flex-wrap items-center gap-2">
-          <Badge
-            v-if="balanceFresh(s)"
-            variant="outline"
-            :class="balanceFresh(s)!.badgeClass"
-          >
-            {{ balanceFresh(s)!.label }}
-          </Badge>
-        </div>
-        <div class="mt-3 flex items-center justify-between border-t pt-3 text-xs text-muted-foreground">
-          <span>余额更新 {{ updatedLabel(s.balance_updated_at) }}</span>
-          <span class="flex items-center gap-2">
-            <button
-              v-if="s.kind === 'model_api' && s.balance_query_url"
-              type="button"
-              class="inline-flex items-center gap-1 text-muted-foreground transition-colors hover:text-primary"
-              title="用 API Key 刷新余量"
-              @click.stop="handleRefreshBalance(s)"
-            >
-              <RefreshCw class="h-3.5 w-3.5" />
-              刷新余量
-            </button>
-            <span class="text-muted-foreground/70">查看密钥</span>
-          </span>
-        </div>
-      </button>
+    <div v-else class="animate-in fade-in slide-in-from-bottom-2 [animation-duration:400ms]">
+      <ToolTable
+        :services="store.services"
+        :refreshing-balance-id="refreshingBalanceId"
+        @view="(s) => viewingService = s"
+        @edit="openEdit"
+        @remove="(s) => deleteTarget = s"
+        @refresh-balance="handleRefreshBalance"
+        @open-console="openConsole"
+        @view-secrets="(s) => viewingService = s"
+      />
     </div>
 
     <!-- 工具详情（含密钥管理） -->

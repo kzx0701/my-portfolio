@@ -45,9 +45,11 @@ export type AiServiceTypeLiteral =
   | 'rightcode'
   | 'pixelapi'
   | 'shareapi'
+  | 'minimax'
+  | 'aliyun'
 
-/** AI 工具形态（ai_services.kind，前端 TOOL_KIND_META 预设：model_api 官方模型 API / agent Agent 工具） */
-export type AiServiceKindLiteral = 'model_api' | 'agent'
+/** AI 工具形态（ai_services.kind，前端 TOOL_KIND_META 预设：model_api 官方模型 API / agent Agent 工具 / relay 中转站） */
+export type AiServiceKindLiteral = 'model_api' | 'agent' | 'relay'
 
 export type Database = {
   public: {
@@ -169,6 +171,8 @@ export type Database = {
           record_date: string
           weight_kg: number | null
           body_fat_pct: number | null
+          visceral_fat: number | null
+          fat_mass_kg: number | null
           muscle_kg: number | null
           bmi: number | null
           note: string | null
@@ -181,6 +185,8 @@ export type Database = {
           record_date?: string
           weight_kg?: number | null
           body_fat_pct?: number | null
+          visceral_fat?: number | null
+          fat_mass_kg?: number | null
           muscle_kg?: number | null
           bmi?: number | null
           note?: string | null
@@ -193,6 +199,8 @@ export type Database = {
           record_date?: string
           weight_kg?: number | null
           body_fat_pct?: number | null
+          visceral_fat?: number | null
+          fat_mass_kg?: number | null
           muscle_kg?: number | null
           bmi?: number | null
           note?: string | null
@@ -357,6 +365,7 @@ export type Database = {
           plan: string | null
           base_url: string | null
           balance_query_url: string | null
+          console_url: string | null
           balance: number | null
           balance_updated_at: string | null
           quota_limit: number | null
@@ -374,6 +383,7 @@ export type Database = {
           plan?: string | null
           base_url?: string | null
           balance_query_url?: string | null
+          console_url?: string | null
           balance?: number | null
           balance_updated_at?: string | null
           quota_limit?: number | null
@@ -391,6 +401,7 @@ export type Database = {
           plan?: string | null
           base_url?: string | null
           balance_query_url?: string | null
+          console_url?: string | null
           balance?: number | null
           balance_updated_at?: string | null
           quota_limit?: number | null

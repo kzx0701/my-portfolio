@@ -1,6 +1,7 @@
 export { default as ToolFormDialog } from './ToolFormDialog.vue'
 export { default as ToolDetailDialog } from './ToolDetailDialog.vue'
 export { default as ToolDeleteDialog } from './ToolDeleteDialog.vue'
+export { default as ToolTable } from './ToolTable.vue'
 export { default as UsageFormDialog } from './UsageFormDialog.vue'
 export { default as UsageDeleteDialog } from './UsageDeleteDialog.vue'
 export { default as SecretFormDialog } from './SecretFormDialog.vue'

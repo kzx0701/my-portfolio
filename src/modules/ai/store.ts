@@ -220,7 +220,7 @@ export const useAiStore = defineStore('ai', () => {
    * 成功则更新 balance + balance_updated_at。返回查询结果供调用方提示。
    */
   async function refreshBalance(service: AiService): Promise<ReturnType<typeof queryBalance>> {
-    if (service.kind !== 'model_api' || !service.balance_query_url) {
+    if ((service.kind !== 'model_api' && service.kind !== 'relay') || !service.balance_query_url) {
       return { ok: false, balance: null, error: '该工具未配置余额查询接口' }
     }
     const secret = secrets.value.find((s) => s.service_id === service.id && s.key_value)

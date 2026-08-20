@@ -55,6 +55,16 @@ export const BALANCE_PROVIDERS: Record<string, { label: string; apiBase: string;
     apiBase: 'https://api.shareapi.com',
     balancePath: '/v1/balance',
   },
+  minimax: {
+    label: 'MiniMax',
+    apiBase: 'https://api.minimax.chat',
+    balancePath: '/v1/user/info',
+  },
+  aliyun: {
+    label: '阿里云百炼',
+    apiBase: 'https://dashscope.aliyuncs.com',
+    balancePath: '/v1/user/balance',
+  },
 }
 
 export const BALANCE_PROVIDER_OPTIONS = [

@@ -20,10 +20,11 @@ export type AiSecret = Database['public']['Tables']['ai_secrets']['Row']
 /** 新建 / 编辑密钥的入参 */
 export type AiSecretInput = Omit<AiSecret, 'id' | 'user_id' | 'created_at' | 'updated_at'>
 
-/** AI 工具形态（kind：model_api 官方模型 API / agent Agent 工具；表单据此切换添加流程） */
-export const TOOL_KIND_META: Record<string, { label: string }> = {
-  model_api: { label: '模型 API' },
-  agent: { label: 'Agent 工具' },
+/** AI 工具形态（kind：model_api 官方模型 API / agent Agent 工具 / relay 中转站；表单据此切换添加流程） */
+export const TOOL_KIND_META: Record<string, { label: string; badgeClass: string }> = {
+  model_api: { label: '模型 API', badgeClass: 'border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-400' },
+  agent: { label: 'Agent 工具', badgeClass: 'border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-400' },
+  relay: { label: '中转站', badgeClass: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400' },
 }
 
 export const TOOL_KIND_OPTIONS = Object.keys(TOOL_KIND_META).map((value) => ({
@@ -39,7 +40,7 @@ export const SERVICE_TYPE_META: Record<string, { label: string; badgeClass: stri
   },
   zhipu: {
     label: '智谱 GLM',
-    badgeClass: 'border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
+    badgeClass: 'border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-400',
   },
   kimi: {
     label: 'Kimi',
@@ -51,7 +52,7 @@ export const SERVICE_TYPE_META: Record<string, { label: string; badgeClass: stri
   },
   rightcode: {
     label: 'Right Code',
-    badgeClass: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+    badgeClass: 'border-teal-500/30 bg-teal-500/10 text-teal-700 dark:text-teal-400',
   },
   pixelapi: {
     label: 'Pixel API',
@@ -59,7 +60,15 @@ export const SERVICE_TYPE_META: Record<string, { label: string; badgeClass: stri
   },
   shareapi: {
     label: 'Share API',
-    badgeClass: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-400',
+    badgeClass: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400',
+  },
+  minimax: {
+    label: 'MiniMax',
+    badgeClass: 'border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400',
+  },
+  aliyun: {
+    label: '阿里云百炼',
+    badgeClass: 'border-lime-500/30 bg-lime-500/10 text-lime-700 dark:text-lime-400',
   },
 }
 
@@ -71,7 +80,7 @@ export const SERVICE_TYPE_OPTIONS = Object.keys(SERVICE_TYPE_META).map((value) =
 /** 工具类型标签文案与徽章样式；未选择返回「其他」 */
 export function serviceTypeMeta(type: string | null): { label: string; badgeClass: string } {
   if (type && SERVICE_TYPE_META[type]) return SERVICE_TYPE_META[type]
-  return SERVICE_TYPE_META.other
+  return { label: '其他', badgeClass: 'border-gray-500/30 bg-gray-500/10 text-gray-700 dark:text-gray-400' }
 }
 
 /** 余额新鲜度判定结果 */

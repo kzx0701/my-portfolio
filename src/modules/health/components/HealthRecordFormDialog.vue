@@ -30,6 +30,8 @@ const form = reactive<HealthRecordInput>({
   record_date: todayStr(),
   weight_kg: null,
   body_fat_pct: null,
+  visceral_fat: null,
+  fat_mass_kg: null,
   muscle_kg: null,
   bmi: null,
   note: null,
@@ -43,6 +45,8 @@ watch(
         form.record_date = props.record.record_date
         form.weight_kg = props.record.weight_kg
         form.body_fat_pct = props.record.body_fat_pct
+        form.visceral_fat = props.record.visceral_fat
+        form.fat_mass_kg = props.record.fat_mass_kg
         form.muscle_kg = props.record.muscle_kg
         form.bmi = props.record.bmi
         form.note = props.record.note
@@ -50,6 +54,8 @@ watch(
         form.record_date = todayStr()
         form.weight_kg = null
         form.body_fat_pct = null
+        form.visceral_fat = null
+        form.fat_mass_kg = null
         form.muscle_kg = null
         form.bmi = null
         form.note = null
@@ -86,6 +92,8 @@ function handleSubmit() {
     record_date: form.record_date,
     weight_kg: num(form.weight_kg),
     body_fat_pct: num(form.body_fat_pct),
+    visceral_fat: num(form.visceral_fat),
+    fat_mass_kg: num(form.fat_mass_kg),
     muscle_kg: num(form.muscle_kg),
     bmi: num(form.bmi),
     note: form.note?.trim() || null,
@@ -118,6 +126,17 @@ function handleSubmit() {
         <div class="space-y-2">
           <Label for="body-fat">体脂率（%）</Label>
           <Input id="body-fat" v-model.number="form.body_fat_pct" type="number" min="0" step="0.1" placeholder="如 18.5" />
+        </div>
+        <div class="space-y-2">
+          <Label for="visceral-fat">内脏脂肪</Label>
+          <Input id="visceral-fat" v-model.number="form.visceral_fat" type="number" min="0" step="0.1" placeholder="如 8" />
+        </div>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="space-y-2">
+          <Label for="fat-mass">脂肪量（kg）</Label>
+          <Input id="fat-mass" v-model.number="form.fat_mass_kg" type="number" min="0" step="0.1" placeholder="如 12.5" />
         </div>
         <div class="space-y-2">
           <Label for="muscle">肌肉量（kg）</Label>

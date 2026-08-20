@@ -81,6 +81,7 @@ async function handleSubmit() {
       plan: null,
       base_url: null,
       balance_query_url: null,
+      console_url: null,
       balance: null,
       balance_updated_at: null,
       quota_limit: null,

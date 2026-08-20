@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { Pencil, Plus, Receipt, RotateCw, Trash2 } from '@lucide/vue'
 import { Badge, Button, Select, Skeleton, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { useAiStore } from '@/modules/ai/store'
@@ -11,6 +11,15 @@ const store = useAiStore()
 
 /** 工具筛选：'all' 表示全部 */
 const serviceFilter = ref<'all' | string>('all')
+
+// 筛选变化时重置页码
+watch(serviceFilter, () => {
+  currentPage.value = 1
+})
+
+/** 分页 */
+const currentPage = ref(1)
+const pageSize = 10
 
 const formOpen = ref(false)
 const editingRecord = ref<AiUsageRecord | null>(null)
@@ -36,6 +45,39 @@ const filteredUsage = computed(() =>
     ? store.usage
     : store.usage.filter((u) => u.service_id === serviceFilter.value),
 )
+
+/** 总页数 */
+const totalPages = computed(() => Math.ceil(filteredUsage.value.length / pageSize))
+
+/** 当前页的消费记录 */
+const paginatedUsage = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  return filteredUsage.value.slice(start, start + pageSize)
+})
+
+/** 页码列表（最多显示 5 个页码） */
+const pageNumbers = computed(() => {
+  const pages: number[] = []
+  const total = totalPages.value
+  const current = currentPage.value
+  
+  if (total <= 5) {
+    for (let i = 1; i <= total; i++) pages.push(i)
+  } else {
+    let start = Math.max(1, current - 2)
+    let end = Math.min(total, start + 4)
+    if (end - start < 4) start = Math.max(1, end - 4)
+    for (let i = start; i <= end; i++) pages.push(i)
+  }
+  return pages
+})
+
+/** 切换页码 */
+function goToPage(page: number) {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+  }
+}
 
 /** 工具名映射 */
 function serviceName(id: string): string {
@@ -117,17 +159,30 @@ async function handleDeleteConfirm() {
 <template>
   <div class="mx-auto max-w-7xl space-y-6">
     <!-- 标题区 -->
-    <div class="flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <div
+        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-sky-400 to-teal-500 text-white shadow-md shadow-sky-500/25"
+        :style="{ viewTransitionName: 'vt-ai' }"
+      >
+        <Receipt class="h-5 w-5" />
+      </div>
+      <div>
+        <h2 class="text-lg font-semibold">消费记录</h2>
+      </div>
+    </div>
+
+    <!-- 消费统计 -->
+    <div v-if="store.usage.length > 0" class="animate-in fade-in slide-in-from-bottom-2 [animation-duration:400ms]">
+      <AiUsageStats />
+    </div>
+
+    <!-- 记录列表 -->
+    <div class="flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3">
-        <div
-          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-sky-400 to-teal-500 text-white shadow-md shadow-sky-500/25"
-          :style="{ viewTransitionName: 'vt-ai' }"
-        >
-          <Receipt class="h-5 w-5" />
+        <div class="w-48">
+          <Select v-model="serviceFilter" :options="filterOptions" />
         </div>
-        <div>
-          <h2 class="text-lg font-semibold">消费记录</h2>
-        </div>
+        <p class="text-sm text-muted-foreground">共 {{ filteredUsage.length }} 条记录</p>
       </div>
       <div class="flex shrink-0 items-center gap-2">
         <Button variant="outline" :disabled="refreshing" @click="handleRefresh">
@@ -139,19 +194,6 @@ async function handleDeleteConfirm() {
           添加消费
         </Button>
       </div>
-    </div>
-
-    <!-- 消费统计 -->
-    <div v-if="store.usage.length > 0" class="animate-in fade-in slide-in-from-bottom-2 [animation-duration:400ms]">
-      <AiUsageStats />
-    </div>
-
-    <!-- 记录列表 -->
-    <div class="flex flex-wrap items-center gap-3">
-      <div class="w-48">
-        <Select v-model="serviceFilter" :options="filterOptions" />
-      </div>
-      <p class="text-sm text-muted-foreground">共 {{ filteredUsage.length }} 条记录</p>
     </div>
 
     <div v-if="store.loading && store.usage.length === 0" class="space-y-2">
@@ -189,7 +231,7 @@ async function handleDeleteConfirm() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          <TableRow v-for="u in filteredUsage" :key="u.id">
+          <TableRow v-for="u in paginatedUsage" :key="u.id">
             <TableCell class="whitespace-nowrap tabular-nums">{{ dateLabel(u.usage_date) }}</TableCell>
             <TableCell class="truncate font-medium" :title="serviceName(u.service_id)">
               {{ serviceName(u.service_id) }}
@@ -237,6 +279,41 @@ async function handleDeleteConfirm() {
           </TableRow>
         </TableBody>
       </Table>
+      
+      <!-- 分页 -->
+      <div v-if="totalPages > 1" class="flex items-center justify-between border-t px-4 py-3">
+        <p class="text-sm text-muted-foreground">
+          第 {{ (currentPage - 1) * pageSize + 1 }}-{{ Math.min(currentPage * pageSize, filteredUsage.length) }} 条，共 {{ filteredUsage.length }} 条
+        </p>
+        <div class="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="currentPage === 1"
+            @click="goToPage(currentPage - 1)"
+          >
+            上一页
+          </Button>
+          <Button
+            v-for="page in pageNumbers"
+            :key="page"
+            :variant="page === currentPage ? 'default' : 'outline'"
+            size="sm"
+            class="min-w-[2.5rem]"
+            @click="goToPage(page)"
+          >
+            {{ page }}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="currentPage === totalPages"
+            @click="goToPage(currentPage + 1)"
+          >
+            下一页
+          </Button>
+        </div>
+      </div>
     </div>
 
     <!-- 新建/编辑弹窗 -->

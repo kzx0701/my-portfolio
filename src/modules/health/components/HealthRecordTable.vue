@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Pencil, Trash2 } from '@lucide/vue'
+import { Pencil, TrendingDown, TrendingUp, Minus, Trash2 } from '@lucide/vue'
 import { Badge, Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { useHealthStore } from '@/modules/health/store'
 import { bmiMeta, resolveBMI, type HealthRecord } from '@/modules/health/types'
@@ -17,6 +17,25 @@ const emit = defineEmits<{
 
 /** 档案身高（BMI 派生计算统一使用；档案可能异步加载，用 computed 保持响应式，未建档为 null） */
 const profileHeight = computed(() => store.profile?.height_cm ?? null)
+
+/** 计算每条记录的体重趋势（与前一条记录对比） */
+function getWeightTrend(record: HealthRecord, index: number): { diff: number | null; icon: typeof TrendingUp | typeof TrendingDown | typeof Minus | null; color: string } {
+  if (record.weight_kg === null || index >= props.records.length - 1) {
+    return { diff: null, icon: null, color: '' }
+  }
+  const prevRecord = props.records[index + 1]
+  if (!prevRecord?.weight_kg) {
+    return { diff: null, icon: null, color: '' }
+  }
+  const diff = Math.round((record.weight_kg - prevRecord.weight_kg) * 100) / 100
+  if (diff > 0) {
+    return { diff, icon: TrendingUp, color: 'text-rose-500' }
+  }
+  if (diff < 0) {
+    return { diff, icon: TrendingDown, color: 'text-emerald-500' }
+  }
+  return { diff: 0, icon: Minus, color: 'text-muted-foreground' }
+}
 
 /** 滚动到底部自动加载更多（阈值 40px；300ms 防抖防连续触发） */
 let lastLoadMore = 0
@@ -52,20 +71,39 @@ function fmtBMI(bmi: number | null): string {
       <Table class="table-fixed">
         <TableHeader class="sticky top-0 z-10 bg-background">
           <TableRow>
-            <TableHead class="w-[12.5%] whitespace-nowrap">日期</TableHead>
-            <TableHead class="w-[12.5%] whitespace-nowrap">体重（kg）</TableHead>
-            <TableHead class="w-[12.5%] whitespace-nowrap">BMI</TableHead>
-            <TableHead class="w-[12.5%] whitespace-nowrap">BMI 分类</TableHead>
-            <TableHead class="w-[12.5%] whitespace-nowrap">体脂率（%）</TableHead>
-            <TableHead class="w-[12.5%] whitespace-nowrap">肌肉量（kg）</TableHead>
-            <TableHead class="w-[12.5%]">备注</TableHead>
-            <TableHead class="w-[12.5%] whitespace-nowrap text-center">操作</TableHead>
+            <TableHead class="w-[10%] whitespace-nowrap">日期</TableHead>
+            <TableHead class="w-[10%] whitespace-nowrap">体重（kg）</TableHead>
+            <TableHead class="w-[10%] whitespace-nowrap">BMI</TableHead>
+            <TableHead class="w-[10%] whitespace-nowrap">BMI 分类</TableHead>
+            <TableHead class="w-[10%] whitespace-nowrap">体脂率（%）</TableHead>
+            <TableHead class="w-[10%] whitespace-nowrap">内脏脂肪</TableHead>
+            <TableHead class="w-[10%] whitespace-nowrap">脂肪量（kg）</TableHead>
+            <TableHead class="w-[10%] whitespace-nowrap">肌肉量（kg）</TableHead>
+            <TableHead class="w-[10%]">备注</TableHead>
+            <TableHead class="w-[10%] whitespace-nowrap text-center">操作</TableHead>
           </TableRow>
         </TableHeader>
       <TableBody>
-        <TableRow v-for="record in records" :key="record.id">
+        <TableRow v-for="(record, index) in records" :key="record.id">
           <TableCell class="whitespace-nowrap font-medium">{{ record.record_date }}</TableCell>
-          <TableCell class="whitespace-nowrap tabular-nums">{{ fmtWeight(record.weight_kg) }}</TableCell>
+          <TableCell class="whitespace-nowrap">
+            <div class="flex items-center gap-1">
+              <span class="tabular-nums">{{ fmtWeight(record.weight_kg) }}</span>
+              <template v-if="getWeightTrend(record, index).icon">
+                <component
+                  :is="getWeightTrend(record, index).icon"
+                  class="h-3.5 w-3.5"
+                  :class="getWeightTrend(record, index).color"
+                />
+                <span
+                  class="text-xs tabular-nums"
+                  :class="getWeightTrend(record, index).color"
+                >
+                  {{ Math.abs(getWeightTrend(record, index).diff!).toFixed(2) }}
+                </span>
+              </template>
+            </div>
+          </TableCell>
           <!-- BMI：手动录入优先，留空自动计算（title 提示来源） -->
           <TableCell class="whitespace-nowrap">
             <span
@@ -91,6 +129,12 @@ function fmtBMI(bmi: number | null): string {
           </TableCell>
           <TableCell class="whitespace-nowrap tabular-nums text-muted-foreground">
             {{ fmt(record.body_fat_pct) }}
+          </TableCell>
+          <TableCell class="whitespace-nowrap tabular-nums text-muted-foreground">
+            {{ fmt(record.visceral_fat) }}
+          </TableCell>
+          <TableCell class="whitespace-nowrap tabular-nums text-muted-foreground">
+            {{ fmt(record.fat_mass_kg) }}
           </TableCell>
           <TableCell class="whitespace-nowrap tabular-nums text-muted-foreground">
             {{ fmt(record.muscle_kg) }}

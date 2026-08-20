@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { RefreshCw } from '@lucide/vue'
-import { Badge, Button, Dialog, Input, Label, Select, Textarea } from '@/components/ui'
+import { Eye, EyeOff } from '@lucide/vue'
+import { Button, Dialog, Input, Label, Select, Textarea } from '@/components/ui'
 import {
   BALANCE_PROVIDER_OPTIONS,
-  queryBalance,
   resolveApiBase,
   resolveBalanceUrl,
 } from '@/lib/balance'
@@ -34,31 +33,28 @@ const AGENT_TYPE_OPTIONS = ['kimi', 'rightcode', 'pixelapi', 'shareapi'].map((va
 }))
 
 const form = reactive({
-  kind: 'model_api' as 'model_api' | 'agent',
+  kind: 'model_api' as 'model_api' | 'agent' | 'relay',
   name: '',
   // 模型 API 分支
   provider: 'deepseek',
   apiKey: '',
-  // 手动余额（模型 API 分支：无余额接口的平台手工维护；查询成功时被覆盖）
-  manualBalance: null as number | '' | null,
+  consoleUrl: '',
+  balanceQueryUrl: '',
   // Agent 分支
   agentType: null as string | null,
-  agentBalance: null as number | '' | null,
+  // 中转站分支
+  relayApiUrl: '',
+  relayApiKey: '',
+  relayBalanceQueryUrl: '',
   note: null as string | null,
 })
 
-/** 查询余量状态 */
-const checking = ref(false)
-const checkResult = ref<{ ok: boolean; balance: number | null; error?: string } | null>(null)
-/** 最近一次查询成功的余额（提交时带上） */
-const lastQueriedBalance = ref<number | null>(null)
+/** API Key 明文可见状态 */
+const showApiKey = ref(false)
 
 /** 计算后的 API 地址与余额接口 */
 const apiBase = computed(() => resolveApiBase(form.provider))
 const balanceUrl = computed(() => resolveBalanceUrl(form.provider))
-
-/** 是否有可用余额查询接口（无则不显示「查询余量」按钮） */
-const canQueryBalance = computed(() => balanceUrl.value.length > 0)
 
 /** 编辑时：该工具已有的 API Key（查询余量用；新建为 null） */
 const existingKey = computed(() => {
@@ -74,20 +70,23 @@ watch(
   (open) => {
     if (!open) return
     const s = props.service
-    form.kind = (s?.kind as 'model_api' | 'agent') ?? 'model_api'
+    form.kind = (s?.kind as 'model_api' | 'agent' | 'relay') ?? 'model_api'
     form.name = s?.name ?? ''
     form.provider = (s?.service_type as string) ?? 'deepseek'
     // 预设平台：service_type 不在预设列表内 → 归入 deepseek
     if (!BALANCE_PROVIDER_OPTIONS.some((o) => o.value === form.provider)) {
       form.provider = 'deepseek'
     }
-    form.apiKey = ''
-    form.manualBalance = null
+    form.apiKey = existingKey.value ?? ''
+    form.consoleUrl = s?.console_url ?? ''
+    form.balanceQueryUrl = s?.balance_query_url ?? ''
     form.agentType = (s?.service_type as string) ?? 'kimi'
-    form.agentBalance = s?.balance ?? null
+    // 中转站分支
+    form.relayApiUrl = s?.base_url ?? ''
+    form.relayApiKey = existingKey.value ?? ''
+    form.relayBalanceQueryUrl = s?.balance_query_url ?? ''
     form.note = s?.note ?? null
-    checkResult.value = null
-    lastQueriedBalance.value = null
+    showApiKey.value = false
   },
 )
 
@@ -96,40 +95,19 @@ function onProviderChange(value: string) {
   form.provider = value
 }
 
-async function handleCheckBalance() {
-  if (!balanceUrl.value) {
-    toast('请先填写余额查询接口地址', 'error')
-    return
-  }
-  if (!queryKey.value) {
-    toast('请先填写 API Key', 'error')
-    return
-  }
-  checking.value = true
-  checkResult.value = null
-  try {
-    const result = await queryBalance(balanceUrl.value, queryKey.value)
-    checkResult.value = result
-    if (result.ok && result.balance !== null) {
-      lastQueriedBalance.value = result.balance
-    } else {
-      lastQueriedBalance.value = null
-    }
-  } finally {
-    checking.value = false
-  }
-}
-
-/** 数值输入归一化：空 → null */
-function num(v: number | '' | null): number | null {
-  return v === '' || v === null ? null : Number(v)
-}
-
 function handleSubmit() {
   const name = form.name.trim()
   if (!name) {
     toast('请填写工具名称', 'error')
     return
+  }
+  // 判断 API Key 是否有修改：编辑时若和现有 key 相同则视为未修改
+  function resolveApiKey(current: string): string | null {
+    const trimmed = current.trim()
+    if (!trimmed) return null
+    // 编辑模式下，如果和现有 key 相同，返回 null 表示不更新
+    if (props.service && trimmed === existingKey.value) return null
+    return trimmed
   }
   if (form.kind === 'model_api') {
     if (!apiBase.value) {
@@ -137,44 +115,61 @@ function handleSubmit() {
       return
     }
     if (!queryKey.value) {
-      toast('请填写 API Key（可先查询余量）', 'error')
+      toast('请填写 API Key', 'error')
       return
     }
-    // 余额：手动填写优先（无余额接口的平台如小米）；有自动查询结果时手动值留空则用查询值
-    const manualBalance = num(form.manualBalance)
-    const balance = manualBalance ?? lastQueriedBalance.value
     const input: AiServiceInput = {
       name,
       service_type: form.provider as AiServiceInput['service_type'],
       kind: 'model_api',
       plan: null,
       base_url: apiBase.value,
-      balance_query_url: balanceUrl.value || null,
-      balance,
-      balance_updated_at: balance !== null ? new Date().toISOString() : null,
+      balance_query_url: form.balanceQueryUrl.trim() || balanceUrl.value || null,
+      console_url: form.consoleUrl.trim() || null,
+      balance: props.service?.balance ?? null,
+      balance_updated_at: props.service?.balance_updated_at ?? null,
       quota_limit: null,
       quota_reset_time: null,
       note: form.note?.trim() || null,
     }
-    emit('submit', { input, apiKey: form.apiKey.trim() || null })
+    emit('submit', { input, apiKey: resolveApiKey(form.apiKey) })
     return
   }
   // Agent 工具
-  const balance = num(form.agentBalance)
-  const input: AiServiceInput = {
+  if (form.kind === 'agent') {
+    const input: AiServiceInput = {
+      name,
+      service_type: form.agentType as AiServiceInput['service_type'],
+      kind: 'agent',
+      plan: null,
+      base_url: null,
+      balance_query_url: null,
+      console_url: form.consoleUrl.trim() || null,
+      balance: props.service?.balance ?? null,
+      balance_updated_at: props.service?.balance_updated_at ?? null,
+      quota_limit: null,
+      quota_reset_time: null,
+      note: form.note?.trim() || null,
+    }
+    emit('submit', { input, apiKey: null })
+    return
+  }
+  // 中转站
+  const relayInput: AiServiceInput = {
     name,
-    service_type: form.agentType as AiServiceInput['service_type'],
-    kind: 'agent',
+    service_type: null,
+    kind: 'relay',
     plan: null,
-    base_url: null,
-    balance_query_url: null,
-    balance,
-    balance_updated_at: balance !== null ? new Date().toISOString() : null,
+    base_url: form.relayApiUrl.trim() || null,
+    balance_query_url: form.relayBalanceQueryUrl.trim() || null,
+    console_url: form.consoleUrl.trim() || null,
+    balance: props.service?.balance ?? null,
+    balance_updated_at: props.service?.balance_updated_at ?? null,
     quota_limit: null,
     quota_reset_time: null,
     note: form.note?.trim() || null,
   }
-  emit('submit', { input, apiKey: null })
+  emit('submit', { input: relayInput, apiKey: resolveApiKey(form.relayApiKey) })
 }
 </script>
 
@@ -182,7 +177,7 @@ function handleSubmit() {
   <Dialog
     :open="open"
     :title="service ? '编辑 AI 工具' : '添加 AI 工具'"
-    description="模型 API：填 API 地址与 Key，自动查询余量；Agent 工具：极简登记。"
+    description="模型 API：填 API 地址与 Key，自动查询余量；Agent 工具：极简登记；中转站：填 API 地址与 Key。"
     class="max-w-2xl"
     @update:open="emit('update:open', $event)"
   >
@@ -212,6 +207,18 @@ function handleSubmit() {
           @click="form.kind = 'agent'"
         >
           Agent 工具
+        </button>
+        <button
+          type="button"
+          class="flex-1 rounded-lg border px-3 py-2 text-sm transition-colors"
+          :class="
+            form.kind === 'relay'
+              ? 'border-transparent bg-primary text-primary-foreground'
+              : 'border-border text-muted-foreground hover:text-foreground'
+          "
+          @click="form.kind = 'relay'"
+        >
+          中转站
         </button>
       </div>
 
@@ -246,66 +253,39 @@ function handleSubmit() {
 
         <div class="space-y-2">
           <Label for="mk-key">API Key{{ service ? '（选填）' : ' *' }}</Label>
-          <Input
-            id="mk-key"
-            v-model="form.apiKey"
-            type="password"
-            autocomplete="off"
-            :placeholder="service ? '留空保持原 Key' : '粘贴 API Key（sk-...）'"
-          />
-        </div>
-
-        <!-- 余额 -->
-        <div class="grid gap-4 sm:grid-cols-2">
-          <div class="space-y-2">
-            <Label for="mk-balance">当前余额（选填）</Label>
+          <div class="relative">
             <Input
-              id="mk-balance"
-              v-model.number="form.manualBalance"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="不支持自动查询的平台手动填写"
+              id="mk-key"
+              v-model="form.apiKey"
+              :type="showApiKey ? 'text' : 'password'"
+              autocomplete="new-password"
+              class="pr-10"
+              :placeholder="service ? '留空保持不变，或输入新密钥' : '粘贴 API Key（sk-...）'"
             />
-            <p v-if="!canQueryBalance" class="text-xs text-muted-foreground">
-              {{ form.provider === 'xiaomi' ? '小米 MiMo 余额需在控制台查看，暂不支持自动查询，请手动填写' : '该平台暂不支持自动查询余量，可手动填写' }}
-            </p>
+            <button
+              type="button"
+              class="absolute right-0 top-0 flex h-full w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+              @click="showApiKey = !showApiKey"
+            >
+              <EyeOff v-if="showApiKey" class="h-4 w-4" />
+              <Eye v-else class="h-4 w-4" />
+            </button>
           </div>
-
         </div>
 
-        <!-- 自动查询余量 -->
-        <div v-if="canQueryBalance" class="space-y-2">
-          <div class="flex items-end gap-2">
-            <div class="flex-1">
-              <p class="text-xs text-muted-foreground">填入 API Key 后点「查询余量」，成功自动保存</p>
-            </div>
-            <Button type="button" variant="outline" :disabled="checking" @click="handleCheckBalance">
-              <RefreshCw class="h-4 w-4" :class="checking && 'animate-spin'" />
-              查询余量
-            </Button>
-          </div>
-          <div v-if="checkResult" class="flex items-center gap-2 text-sm">
-            <Badge
-              variant="outline"
-              :class="
-                checkResult.ok
-                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                  : 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400'
-              "
-            >
-              {{ checkResult.ok ? '查询成功' : '查询失败' }}
-            </Badge>
-            <span v-if="checkResult.ok" class="font-semibold tabular-nums">
-              {{ checkResult.balance !== null ? new Intl.NumberFormat('zh-CN').format(checkResult.balance) : '—' }}
-            </span>
-            <span v-else class="text-xs text-muted-foreground">{{ checkResult.error }}</span>
-          </div>
+        <div class="space-y-2">
+          <Label for="mk-balance-url">用量查询地址（选填）</Label>
+          <Input
+            id="mk-balance-url"
+            v-model="form.balanceQueryUrl"
+            :placeholder="balanceUrl || '留空使用预设地址'"
+          />
+          <p v-if="balanceUrl" class="text-xs text-muted-foreground">预设：{{ balanceUrl }}</p>
         </div>
       </template>
 
       <!-- Agent 工具分支 -->
-      <template v-else>
+      <template v-else-if="form.kind === 'agent'">
         <div class="grid gap-4 sm:grid-cols-2">
           <div class="space-y-2">
             <Label for="ak-name">工具名称 *</Label>
@@ -316,11 +296,49 @@ function handleSubmit() {
             <Select id="ak-type" v-model="form.agentType" :options="AGENT_TYPE_OPTIONS" />
           </div>
         </div>
+      </template>
+
+      <!-- 中转站分支 -->
+      <template v-else>
         <div class="space-y-2">
-          <Label for="ak-balance">当前剩余额度（选填）</Label>
-          <Input id="ak-balance" v-model.number="form.agentBalance" type="number" min="0" step="0.01" placeholder="手动维护，如 WorkBuddy 剩余积分" />
+          <Label for="rl-name">工具名称 *</Label>
+          <Input id="rl-name" v-model="form.name" placeholder="如：OpenRouter 中转" required />
+        </div>
+        <div class="space-y-2">
+          <Label for="rl-api-url">API 地址</Label>
+          <Input id="rl-api-url" v-model="form.relayApiUrl" placeholder="如：https://openrouter.ai/api/v1" />
+        </div>
+        <div class="space-y-2">
+          <Label for="rl-api-key">API Key</Label>
+          <div class="relative">
+            <Input
+              id="rl-api-key"
+              v-model="form.relayApiKey"
+              :type="showApiKey ? 'text' : 'password'"
+              autocomplete="new-password"
+              class="pr-10"
+              :placeholder="service ? '留空保持不变，或输入新密钥' : '粘贴 API Key'"
+            />
+            <button
+              type="button"
+              class="absolute right-0 top-0 flex h-full w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+              @click="showApiKey = !showApiKey"
+            >
+              <EyeOff v-if="showApiKey" class="h-4 w-4" />
+              <Eye v-else class="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <Label for="rl-balance-query-url">用量查询地址（选填）</Label>
+          <Input id="rl-balance-query-url" v-model="form.relayBalanceQueryUrl" placeholder="如：https://openrouter.ai/api/v1/auth/key" />
         </div>
       </template>
+
+      <div class="space-y-2">
+        <Label for="svc-console">控制台地址（选填）</Label>
+        <Input id="svc-console" v-model="form.consoleUrl" placeholder="如：https://platform.deepseek.com" />
+      </div>
 
       <div class="space-y-2">
         <Label for="svc-note">备注</Label>

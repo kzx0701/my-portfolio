@@ -94,7 +94,7 @@ function handleSubmit() {
           id="ai-secret-value"
           v-model="form.key_value"
           type="password"
-          autocomplete="off"
+          autocomplete="new-password"
           :placeholder="secret ? `留空保持原值（当前：${maskKey(secret.key_value)}）` : '粘贴密钥内容'"
         />
         <p v-if="secret" class="text-xs text-muted-foreground">编辑时留空则保持原密钥不变</p>

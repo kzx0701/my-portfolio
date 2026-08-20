@@ -8,7 +8,7 @@ import { useAiStore } from '@/modules/ai/store'
 const store = useAiStore()
 
 /** 工具固定配色（轮转） */
-const TOOL_COLORS = ['#0ea5e9', '#14b8a6', '#f59e0b', '#6366f1', '#10b981', '#f43f5e']
+const TOOL_COLORS = ['#3b82f6', '#8b5cf6', '#a855f7', '#f97316', '#14b8a6', '#ec4899', '#f59e0b', '#f43f5e', '#84cc16']
 
 const AXIS_COLOR = '#71717a'
 const AXIS_LINE = 'rgba(128, 128, 128, 0.35)'

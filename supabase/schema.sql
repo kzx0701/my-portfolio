@@ -665,3 +665,5 @@ create policy "ai_secrets_delete_own" on public.ai_secrets
 
 -- ---------- 40.1 权限：仅授予登录用户（authenticated） ----------
 grant select, insert, update, delete on table public.ai_secrets to authenticated;
+-- ---------- 29.2 添加控制台 URL 字段 ----------
+alter table public.ai_services add column if not exists console_url text;

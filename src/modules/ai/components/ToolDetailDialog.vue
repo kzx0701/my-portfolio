@@ -41,7 +41,8 @@ const balanceLabel = computed(() => {
   const s = props.service
   if (!s) return '—'
   if (s.balance === null) return '未维护'
-  return s.quota_limit !== null ? `${s.balance} / ${s.quota_limit}` : `${s.balance}`
+  const val = Number(s.balance).toFixed(2)
+  return s.quota_limit !== null ? `${val} / ${s.quota_limit}` : val
 })
 
 /** 刷新余量（模型 API 类：用关联 Key 调余额接口） */
@@ -174,7 +175,7 @@ async function handleSecretDeleteConfirm() {
           <div class="flex items-center justify-between">
             <p class="text-xs text-muted-foreground">当前剩余额度</p>
             <button
-              v-if="service.kind === 'model_api' && service.balance_query_url"
+              v-if="(service.kind === 'model_api' || service.kind === 'relay') && service.balance_query_url"
               type="button"
               class="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary"
               :disabled="refreshing"
