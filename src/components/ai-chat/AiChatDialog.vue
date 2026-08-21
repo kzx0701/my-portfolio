@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 import {
   Loader2,
   MessageCircle,
@@ -23,7 +24,10 @@ const showSidebar = ref(false)
 
 const conversationCount = computed(() => store.sortedConversations.length)
 
-onMounted(() => store.fetchConversations())
+onMounted(() => {
+  store.fetchModels()
+  store.fetchConversations()
+})
 
 watch(
   () => store.chatOpen,
@@ -61,7 +65,7 @@ function scrollToBottom() {
 
 function handleSend() {
   const text = inputText.value.trim()
-  if (!text || store.streaming) return
+  if (!text || store.streaming || store.enabledModels.length === 0) return
   inputText.value = ''
   resetTextareaHeight()
   store.sendMessage(text)
@@ -75,9 +79,14 @@ function handleKeydown(e: KeyboardEvent) {
 }
 
 function handleQuickSend(text: string) {
-  if (store.streaming) return
+  if (store.streaming || store.enabledModels.length === 0) return
   inputText.value = text
   nextTick(handleSend)
+}
+
+function handleModelChange(e: Event) {
+  const modelId = (e.target as HTMLSelectElement).value
+  if (modelId) store.selectModel(modelId)
 }
 
 function handleNewChat() {
@@ -141,7 +150,19 @@ const showLoading = computed(() => {
             <div class="flex items-center gap-2">
               <h2 class="truncate text-base font-semibold tracking-tight text-white">AI 助手</h2>
             </div>
-            <p class="mt-0.5 truncate text-[11px] text-white/65">DeepSeek V4 Flash</p>
+            <select
+              v-if="store.enabledModels.length > 0"
+              class="ai-chat-model-select"
+              :value="store.currentModelId ?? store.defaultModel?.id ?? ''"
+              :disabled="store.streaming"
+              aria-label="选择对话模型"
+              @change="handleModelChange"
+            >
+              <option v-for="model in store.enabledModels" :key="model.id" :value="model.id">
+                {{ model.display_name }}
+              </option>
+            </select>
+            <p v-else class="mt-0.5 text-[11px] text-white/65">未配置对话模型</p>
           </div>
         </div>
 
@@ -217,12 +238,14 @@ const showLoading = computed(() => {
                 <div class="ai-chat-empty-sun"><Sparkles class="h-5 w-5" /></div>
               </div>
               <h3>开始对话</h3>
-              <p class="max-w-[260px] text-center text-sm leading-relaxed text-muted-foreground">输入一个问题，让我帮你理清思路。</p>
-              <div class="mt-6 flex flex-wrap justify-center gap-2">
+              <p v-if="store.enabledModels.length > 0" class="max-w-[260px] text-center text-sm leading-relaxed text-muted-foreground">输入一个问题，让我帮你理清思路。</p>
+              <p v-else class="max-w-[280px] text-center text-sm leading-relaxed text-muted-foreground">请先在 AI 中心配置一个可用的对话模型。</p>
+              <div v-if="store.enabledModels.length > 0" class="mt-6 flex flex-wrap justify-center gap-2">
                 <button class="ai-chat-prompt-chip" type="button" @click="handleQuickSend('帮我写一段代码')">帮我写代码</button>
                 <button class="ai-chat-prompt-chip" type="button" @click="handleQuickSend('解释一下这个概念')">解释一个概念</button>
                 <button class="ai-chat-prompt-chip" type="button" @click="handleQuickSend('给我一些建议')">给我一些建议</button>
               </div>
+              <RouterLink v-else to="/ai/tools" class="ai-chat-config-link">去 AI 中心配置</RouterLink>
             </div>
 
             <div v-else class="ai-chat-message-list">
@@ -254,7 +277,8 @@ const showLoading = computed(() => {
                 v-model="inputText"
                 rows="1"
                 class="ai-chat-textarea"
-                placeholder="告诉我你在想什么…"
+                :placeholder="store.enabledModels.length > 0 ? '告诉我你在想什么…' : '请先配置对话模型'"
+                :disabled="store.enabledModels.length === 0"
                 aria-label="输入消息"
                 @keydown="handleKeydown"
                 @input="autoResize"
@@ -262,7 +286,7 @@ const showLoading = computed(() => {
               <button
                 class="ai-chat-send"
                 type="button"
-                :disabled="!inputText.trim() || store.streaming"
+                :disabled="!inputText.trim() || store.streaming || store.enabledModels.length === 0"
                 :aria-label="store.streaming ? '发送中' : '发送消息'"
                 @click="handleSend"
               >
@@ -347,6 +371,20 @@ const showLoading = computed(() => {
 }
 
 .ai-chat-section-label { color: #0d7480; }
+
+.ai-chat-model-select {
+  max-width: 220px;
+  padding: 1px 20px 1px 0;
+  color: rgba(255, 255, 255, 0.72);
+  background: transparent;
+  border: 0;
+  outline: 0;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.ai-chat-model-select:disabled { cursor: default; opacity: 0.7; }
+.ai-chat-model-select option { color: #164e63; background: #fff; }
 
 .ai-chat-icon-button,
 .ai-chat-sidebar-plus {
@@ -508,6 +546,18 @@ const showLoading = computed(() => {
 }
 
 .ai-chat-prompt-chip:hover { color: #075966; background: #fff; border-color: rgba(18, 143, 141, 0.32); box-shadow: 0 5px 12px rgba(17, 124, 125, 0.1); transform: translateY(-1px); }
+
+.ai-chat-config-link {
+  margin-top: 20px;
+  padding: 8px 12px;
+  color: #087582;
+  border: 1px solid rgba(18, 143, 141, 0.18);
+  border-radius: 999px;
+  font-size: 12px;
+  transition: 180ms ease;
+}
+
+.ai-chat-config-link:hover { color: #075966; background: rgba(214, 242, 237, 0.55); }
 
 .ai-chat-message-list { padding: 16px clamp(16px, 4vw, 36px) 20px; }
 .ai-chat-day-divider { display: flex; align-items: center; gap: 12px; margin: 2px 0 16px; color: var(--muted-foreground); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; }

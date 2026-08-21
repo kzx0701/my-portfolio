@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
-import { queryBalance } from '@/lib/balance'
 import type {
   AiSecret,
   AiSecretInput,
@@ -215,28 +214,6 @@ export const useAiStore = defineStore('ai', () => {
     return secrets.value.filter((s) => s.service_id === serviceId)
   }
 
-  /**
-   * 刷新工具余额：用该工具关联的 API Key 调余额接口（balance_query_url），
-   * 成功则更新 balance + balance_updated_at。返回查询结果供调用方提示。
-   */
-  async function refreshBalance(service: AiService): Promise<ReturnType<typeof queryBalance>> {
-    if ((service.kind !== 'model_api' && service.kind !== 'relay') || !service.balance_query_url) {
-      return { ok: false, balance: null, error: '该工具未配置余额查询接口' }
-    }
-    const secret = secrets.value.find((s) => s.service_id === service.id && s.key_value)
-    if (!secret?.key_value) {
-      return { ok: false, balance: null, error: '未找到该工具的 API Key' }
-    }
-    const result = await queryBalance(service.balance_query_url, secret.key_value)
-    if (result.ok && result.balance !== null) {
-      await updateService(service.id, {
-        balance: result.balance,
-        balance_updated_at: new Date().toISOString(),
-      })
-    }
-    return result
-  }
-
   return {
     services,
     usage,
@@ -256,6 +233,5 @@ export const useAiStore = defineStore('ai', () => {
     updateSecret,
     deleteSecret,
     secretsOf,
-    refreshBalance,
   }
 })

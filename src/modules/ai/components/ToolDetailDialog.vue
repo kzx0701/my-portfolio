@@ -1,16 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { CalendarDays, Copy, Eye, EyeOff, KeyRound, Link2, Pencil, Plus, RefreshCw, Trash2 } from '@lucide/vue'
-import { Badge, Button, Dialog, Skeleton } from '@/components/ui'
+import { Check, Copy, Eye, EyeOff, KeyRound, Pencil, Plus, Trash2 } from '@lucide/vue'
+import { Button, Dialog, Skeleton } from '@/components/ui'
 import { useAiStore } from '@/modules/ai/store'
-import {
-  balanceFresh,
-  maskKey,
-  serviceTypeMeta,
-  type AiSecret,
-  type AiSecretInput,
-  type AiService,
-} from '@/modules/ai/types'
+import { maskKey, type AiSecret, type AiSecretInput, type AiService } from '@/modules/ai/types'
 import SecretDeleteDialog from './SecretDeleteDialog.vue'
 import SecretFormDialog from './SecretFormDialog.vue'
 import { toast } from '@/lib/toast'
@@ -22,74 +15,22 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  edit: []
-  remove: []
 }>()
 
 const store = useAiStore()
 
-/** 刷新余量中 */
-const refreshing = ref(false)
-
-/** 该工具的密钥 */
+/** 当前工具关联的密钥；弹窗只负责密钥保管，不展示额度或工具详情 */
 const serviceSecrets = computed(() => (props.service ? store.secretsOf(props.service.id) : []))
-/** 余额新鲜度 */
-const fresh = computed(() => (props.service ? balanceFresh(props.service) : null))
-
-/** 余额展示：有周期额度显示 剩余/总额；否则单值 */
-const balanceLabel = computed(() => {
-  const s = props.service
-  if (!s) return '—'
-  if (s.balance === null) return '未维护'
-  const val = Number(s.balance).toFixed(2)
-  return s.quota_limit !== null ? `${val} / ${s.quota_limit}` : val
-})
-
-/** 刷新余量（模型 API 类：用关联 Key 调余额接口） */
-async function handleRefreshBalance() {
-  if (!props.service) return
-  refreshing.value = true
-  try {
-    const result = await store.refreshBalance(props.service)
-    if (result.ok) {
-      toast(
-        `余量已刷新：${result.balance !== null ? new Intl.NumberFormat('zh-CN').format(result.balance) : '—'}`,
-        'success',
-      )
-    } else {
-      toast(result.error ?? '刷新失败', 'error')
-    }
-  } finally {
-    refreshing.value = false
-  }
-}
-
-/** 重置时间展示 MM-DD */
-const resetLabel = computed(() => {
-  const t = props.service?.quota_reset_time
-  if (!t) return null
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t)
-  if (!m) return t
-  return `${Number(m[2])}-${m[3]} 重置`
-})
-
-/** 余额更新时间展示 */
-const updatedLabel = computed(() => {
-  const t = props.service?.balance_updated_at
-  if (!t) return '—'
-  const d = new Date(t)
-  if (Number.isNaN(d.getTime())) return t
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
-})
 
 const secretFormOpen = ref(false)
 const editingSecret = ref<AiSecret | null>(null)
 const deleteSecretTarget = ref<AiSecret | null>(null)
 const submitting = ref(false)
 const deleting = ref(false)
-/** 明文可见的密钥 id（点击眼睛临时展开明文；默认打码） */
+/** 当前明文显示的密钥 id；默认只显示打码片段 */
 const revealedId = ref<string | null>(null)
+/** 最近复制成功的密钥 id，用于给出即时反馈 */
+const copiedId = ref<string | null>(null)
 
 function openCreateSecret() {
   editingSecret.value = null
@@ -109,6 +50,10 @@ async function handleCopy(secret: AiSecret) {
   try {
     await navigator.clipboard.writeText(secret.key_value)
     revealedId.value = null
+    copiedId.value = secret.id
+    window.setTimeout(() => {
+      if (copiedId.value === secret.id) copiedId.value = null
+    }, 1800)
     toast('已复制到剪贴板', 'success')
   } catch {
     toast('复制失败，请手动选择', 'error')
@@ -154,114 +99,90 @@ async function handleSecretDeleteConfirm() {
 <template>
   <Dialog
     :open="open"
-    class="max-w-2xl"
+    class="max-w-xl"
     @update:open="emit('update:open', $event)"
   >
-    <div v-if="service">
-      <!-- 工具信息 -->
-      <div class="mb-4">
-        <div class="flex flex-wrap items-center gap-2">
-          <Badge variant="outline" :class="serviceTypeMeta(service.service_type).badgeClass">
-            {{ serviceTypeMeta(service.service_type).label }}
-          </Badge>
-          <Badge v-if="service.plan" variant="secondary" class="font-normal">{{ service.plan }}</Badge>
-        </div>
-        <h2 class="mt-2 text-xl font-semibold">{{ service.name }}</h2>
-      </div>
-
-      <!-- 余额概览 -->
-      <div class="grid gap-3 sm:grid-cols-2">
-        <div class="rounded-lg border p-4">
-          <div class="flex items-center justify-between">
-            <p class="text-xs text-muted-foreground">当前剩余额度</p>
-            <button
-              v-if="(service.kind === 'model_api' || service.kind === 'relay') && service.balance_query_url"
-              type="button"
-              class="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary"
-              :disabled="refreshing"
-              title="用 API Key 刷新余量"
-              @click="handleRefreshBalance"
-            >
-              <RefreshCw class="h-3.5 w-3.5" :class="refreshing && 'animate-spin'" />
-              刷新余量
-            </button>
-          </div>
-          <p class="mt-1 text-2xl font-bold tabular-nums tracking-tight">{{ balanceLabel }}</p>
-          <div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
-            <Badge v-if="fresh" variant="outline" :class="fresh.badgeClass">{{ fresh.label }}</Badge>
-            <span v-if="resetLabel" class="text-muted-foreground tabular-nums">{{ resetLabel }}</span>
-          </div>
-        </div>
-        <div class="space-y-1.5 rounded-lg border p-4 text-sm">
-          <div class="flex items-center gap-1.5 text-muted-foreground">
-            <CalendarDays class="h-3.5 w-3.5" />
-            余额更新：{{ updatedLabel }}
-          </div>
-          <div v-if="service.base_url" class="flex items-center gap-1.5 text-muted-foreground">
-            <Link2 class="h-3.5 w-3.5" />
-            <span class="truncate">{{ service.base_url }}</span>
-          </div>
-          <p v-if="service.note" class="text-muted-foreground">{{ service.note }}</p>
-        </div>
-      </div>
-
-      <!-- 密钥区 -->
-      <div class="mt-5">
-        <div class="mb-2 flex items-center justify-between">
-          <h3 class="flex items-center gap-1.5 text-sm font-semibold">
+    <div v-if="service" class="space-y-5">
+      <!-- 标题与密钥操作分层，避开 Dialog 自带的右上角关闭按钮 -->
+      <div class="min-w-0">
+        <h2 class="pr-10 text-xl font-semibold tracking-tight">{{ service.name }}</h2>
+        <div class="mt-4 flex items-center justify-between gap-3 border-b pb-3">
+          <div class="flex items-center gap-1.5 text-sm font-medium">
             <KeyRound class="h-4 w-4 text-muted-foreground" />
-            密钥配置（{{ serviceSecrets.length }}）
-          </h3>
-          <Button variant="outline" size="sm" @click="openCreateSecret">
+            密钥
+          </div>
+          <Button variant="outline" size="sm" class="shrink-0" @click="openCreateSecret">
             <Plus class="h-4 w-4" />
             添加密钥
           </Button>
         </div>
-        <div v-if="serviceSecrets.length > 0" class="divide-y rounded-lg border">
-          <div v-for="s in serviceSecrets" :key="s.id" class="flex items-center gap-2 px-3 py-2.5 text-sm">
-            <div class="min-w-0 flex-1">
-              <p class="truncate font-medium">{{ s.name }}</p>
-              <code class="mt-0.5 block truncate font-mono text-xs text-muted-foreground">
-                {{ revealedId === s.id ? s.key_value : maskKey(s.key_value) }}
-              </code>
-            </div>
-            <div class="flex shrink-0 gap-0.5">
-              <Button variant="ghost" size="sm" :title="revealedId === s.id ? '隐藏' : '显示明文'" @click="revealedId = revealedId === s.id ? null : s.id">
-                <EyeOff v-if="revealedId === s.id" class="h-4 w-4" />
-                <Eye v-else class="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm" title="复制" @click="handleCopy(s)">
-                <Copy class="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm" title="编辑" @click="openEditSecret(s)">
-                <Pencil class="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                title="删除"
-                class="text-destructive hover:text-destructive"
-                @click="deleteSecretTarget = s"
-              >
-                <Trash2 class="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-        <p v-else class="rounded-lg border border-dashed py-6 text-center text-sm text-muted-foreground">
-          尚未配置密钥，点击「添加密钥」录入该工具的 API Key / Token
-        </p>
       </div>
 
-      <!-- 底部操作 -->
-      <div class="mt-5 flex justify-between gap-2">
-        <Button type="button" variant="ghost" class="text-destructive hover:text-destructive" @click="emit('remove')">
-          <Trash2 class="h-4 w-4" />
-          删除工具
-        </Button>
-        <Button type="button" @click="emit('edit')">
-          <Pencil class="h-4 w-4" />
-          编辑工具
+      <div v-if="serviceSecrets.length > 0" class="space-y-2">
+        <div
+          v-for="s in serviceSecrets"
+          :key="s.id"
+          class="group flex items-center gap-3 rounded-xl border bg-card/70 px-3 py-3 transition-colors hover:border-teal-500/30 hover:bg-teal-500/[0.03]"
+        >
+          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-500/10 text-teal-700 dark:text-teal-400">
+            <KeyRound class="h-4 w-4" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-medium" :title="s.name">{{ s.name }}</p>
+            <code class="mt-1 block truncate font-mono text-xs text-muted-foreground" :title="revealedId === s.id ? s.key_value ?? '' : undefined">
+              {{ revealedId === s.id ? s.key_value : maskKey(s.key_value) }}
+            </code>
+            <p v-if="s.note" class="mt-1 truncate text-xs text-muted-foreground" :title="s.note">{{ s.note }}</p>
+          </div>
+          <div class="flex shrink-0 items-center gap-0.5">
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-8 w-8"
+              :disabled="!s.key_value"
+              :title="revealedId === s.id ? '隐藏明文' : '显示明文'"
+              :aria-label="revealedId === s.id ? '隐藏明文' : '显示明文'"
+              @click="revealedId = revealedId === s.id ? null : s.id"
+            >
+              <EyeOff v-if="revealedId === s.id" class="h-4 w-4" />
+              <Eye v-else class="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-8 w-8"
+              :class="copiedId === s.id ? 'text-emerald-600 dark:text-emerald-400' : ''"
+              :title="copiedId === s.id ? '已复制' : '复制密钥'"
+              :aria-label="copiedId === s.id ? '已复制' : '复制密钥'"
+              :disabled="!s.key_value"
+              @click="handleCopy(s)"
+            >
+              <Check v-if="copiedId === s.id" class="h-4 w-4" />
+              <Copy v-else class="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" class="h-8 w-8" title="编辑密钥" aria-label="编辑密钥" @click="openEditSecret(s)">
+              <Pencil class="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-8 w-8 text-destructive hover:text-destructive"
+              title="删除密钥"
+              aria-label="删除密钥"
+              @click="deleteSecretTarget = s"
+            >
+              <Trash2 class="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+      <div v-else class="rounded-xl border border-dashed px-5 py-10 text-center">
+        <KeyRound class="mx-auto h-8 w-8 text-muted-foreground/60" />
+        <p class="mt-3 text-sm font-medium">还没有密钥</p>
+        <p class="mt-1 text-xs text-muted-foreground">添加 API Key、Token 等凭据</p>
+        <Button class="mt-4" size="sm" @click="openCreateSecret">
+          <Plus class="h-4 w-4" />
+          添加密钥
         </Button>
       </div>
     </div>
@@ -269,7 +190,6 @@ async function handleSecretDeleteConfirm() {
       <Skeleton v-for="i in 3" :key="i" class="h-12 rounded-md" />
     </div>
 
-    <!-- 密钥新建/编辑 -->
     <SecretFormDialog
       v-model:open="secretFormOpen"
       :secret="editingSecret"
@@ -277,7 +197,6 @@ async function handleSecretDeleteConfirm() {
       @submit="handleSecretSubmit"
     />
 
-    <!-- 密钥删除确认 -->
     <SecretDeleteDialog
       :open="deleteSecretTarget !== null"
       :secret-name="deleteSecretTarget?.name"

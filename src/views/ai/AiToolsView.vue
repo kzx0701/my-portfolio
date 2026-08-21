@@ -3,7 +3,9 @@ import { onMounted, ref } from 'vue'
 import { Plus, RotateCw, Sparkles, Wrench } from '@lucide/vue'
 import { Button, Skeleton } from '@/components/ui'
 import { useAiStore } from '@/modules/ai/store'
+import { useAiChatStore } from '@/modules/ai-chat/store'
 import {
+  ChatModelDialog,
   ToolDeleteDialog,
   ToolDetailDialog,
   ToolFormDialog,
@@ -17,15 +19,17 @@ const store = useAiStore()
 const formOpen = ref(false)
 const editingService = ref<AiService | null>(null)
 const viewingService = ref<AiService | null>(null)
+const chatModelService = ref<AiService | null>(null)
 const deleteTarget = ref<AiService | null>(null)
 const submitting = ref(false)
 const deleting = ref(false)
 const refreshing = ref(false)
-const refreshingBalanceId = ref<string | null>(null)
+const chatStore = useAiChatStore()
 
 onMounted(() => {
   store.fetchServices()
   store.fetchSecrets()
+  chatStore.fetchModels()
 })
 
 function openConsole(url: string) {
@@ -54,44 +58,14 @@ function openEdit(service: AiService) {
   formOpen.value = true
 }
 
-async function handleSubmit(payload: { input: AiServiceInput; apiKey: string | null }) {
-  const { input, apiKey } = payload
+async function handleSubmit(input: AiServiceInput) {
   submitting.value = true
   try {
     if (editingService.value) {
       await store.updateService(editingService.value.id, input)
-      // 编辑时若重新填了 Key，更新或创建密钥
-      if (apiKey) {
-        const existingSecret = store.secretsOf(editingService.value.id).find((s) => s.key_value)
-        if (existingSecret) {
-          await store.updateSecret(existingSecret.id, {
-            name: `${input.name} API Key`,
-            service: input.service_type,
-            key_value: apiKey,
-          })
-        } else {
-          await store.createSecret({
-            service_id: editingService.value.id,
-            name: `${input.name} API Key`,
-            service: input.service_type,
-            key_value: apiKey,
-            note: null,
-          })
-        }
-      }
       toast('工具已更新', 'success')
     } else {
-      const created = await store.createService(input)
-      // 模型 API：把 Key 存到该工具名下
-      if (apiKey) {
-        await store.createSecret({
-          service_id: created.id,
-          name: `${input.name} API Key`,
-          service: input.service_type,
-          key_value: apiKey,
-          note: null,
-        })
-      }
+      await store.createService(input)
       toast('工具已添加', 'success')
     }
     formOpen.value = false
@@ -100,21 +74,6 @@ async function handleSubmit(payload: { input: AiServiceInput; apiKey: string | n
     toast(e?.message ?? '保存失败', 'error')
   } finally {
     submitting.value = false
-  }
-}
-
-/** 刷新指定工具余量（模型 API 类：用关联 Key 调余额接口） */
-async function handleRefreshBalance(service: AiService) {
-  refreshingBalanceId.value = service.id
-  try {
-    const result = await store.refreshBalance(service)
-    if (result.ok) {
-      toast(`余量已刷新：${result.balance !== null ? Number(result.balance).toFixed(2) : '—'}`, 'success')
-    } else {
-      toast(result.error ?? '刷新失败', 'error')
-    }
-  } finally {
-    refreshingBalanceId.value = null
   }
 }
 
@@ -147,7 +106,7 @@ async function handleDeleteConfirm() {
           <Sparkles class="h-5 w-5" />
         </div>
         <div>
-          <h2 class="text-lg font-semibold">工具列表</h2>
+          <h2 class="text-lg font-semibold">工具管理</h2>
         </div>
       </div>
       <div class="flex shrink-0 items-center gap-2">
@@ -162,15 +121,15 @@ async function handleDeleteConfirm() {
       </div>
     </div>
 
-    <!-- 工具列表 -->
+    <!-- 工具管理 -->
     <div v-if="store.loading && store.services.length === 0" class="overflow-hidden rounded-lg border bg-card">
       <div class="flex h-12 items-center border-b bg-muted/30 px-2">
-        <div v-for="i in 8" :key="`h-${i}`" class="w-[12.5%] px-2">
+        <div v-for="i in 4" :key="`h-${i}`" class="w-1/4 px-2">
           <Skeleton class="h-4 w-16" />
         </div>
       </div>
       <div v-for="r in 5" :key="`r-${r}`" class="flex h-12 items-center border-b px-2 last:border-0">
-        <div v-for="c in 8" :key="`c-${c}`" class="w-[12.5%] px-2">
+        <div v-for="c in 4" :key="`c-${c}`" class="w-1/4 px-2">
           <Skeleton class="h-4 w-3/4" />
         </div>
       </div>
@@ -178,7 +137,7 @@ async function handleDeleteConfirm() {
     <div v-else-if="store.services.length === 0" class="rounded-lg border border-dashed py-16 text-center">
       <Wrench class="mx-auto h-10 w-10 text-muted-foreground/60" />
       <p class="mt-3 font-medium">还没有 AI 工具</p>
-      <p class="mt-1 text-sm text-muted-foreground">添加你使用的 AI 工具，统一管理额度与密钥</p>
+      <p class="mt-1 text-sm text-muted-foreground">添加你使用的 AI 工具，统一管理控制台与密钥</p>
       <Button class="mt-4" @click="openCreate">
         <Plus class="h-4 w-4" />
         添加第一个工具
@@ -187,23 +146,27 @@ async function handleDeleteConfirm() {
     <div v-else class="animate-in fade-in slide-in-from-bottom-2 [animation-duration:400ms]">
       <ToolTable
         :services="store.services"
-        :refreshing-balance-id="refreshingBalanceId"
         @view="(s) => viewingService = s"
         @edit="openEdit"
         @remove="(s) => deleteTarget = s"
-        @refresh-balance="handleRefreshBalance"
         @open-console="openConsole"
         @view-secrets="(s) => viewingService = s"
+        @manage-chat-models="(s) => chatModelService = s"
       />
     </div>
 
-    <!-- 工具详情（含密钥管理） -->
+    <!-- 密钥管理 -->
     <ToolDetailDialog
       :open="viewingService !== null"
       :service="viewingService"
       @update:open="(v) => !v && (viewingService = null)"
-      @edit="viewingService && openEdit(viewingService)"
-      @remove="viewingService && (deleteTarget = viewingService)"
+    />
+
+    <!-- 对话模型配置 -->
+    <ChatModelDialog
+      :open="chatModelService !== null"
+      :service="chatModelService"
+      @update:open="(v) => !v && (chatModelService = null)"
     />
 
     <!-- 新建/编辑 -->

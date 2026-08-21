@@ -83,7 +83,7 @@ const routes: RouteRecordRaw[] = [
         path: 'ai/tools',
         name: 'ai-tools',
         component: () => import('@/views/ai/AiToolsView.vue'),
-        meta: { title: '工具列表' },
+        meta: { title: '工具管理' },
       },
       // ---- 预留模块路由：后续确定后在 modules/registry.ts 开启并在此挂载 ----
     ],

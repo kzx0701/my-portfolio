@@ -6,8 +6,7 @@ import { Badge, Button, Card, Skeleton } from '@/components/ui'
 import { useAiStore } from '@/modules/ai/store'
 import { AiStatsCards, UsageFormDialog } from '@/modules/ai/components'
 import {
-  balanceFresh,
-  serviceTypeMeta,
+  TOOL_KIND_META,
   type AiUsageRecordInput,
 } from '@/modules/ai/types'
 import { toast } from '@/lib/toast'
@@ -25,7 +24,7 @@ onMounted(async () => {
   loaded.value = true
 })
 
-/** 是否有余额的工具（低余额预警用） */
+/** 是否已登记工具 */
 const isEmpty = computed(() => store.services.length === 0)
 
 /** 最近消费记录（5 条） */
@@ -36,11 +35,9 @@ function serviceName(id: string): string {
   return store.services.find((s) => s.id === id)?.name ?? '未知工具'
 }
 
-/** 余额展示：有周期额度显示 剩余/总额 */
-function balanceLabel(serviceId: string): string {
-  const s = store.services.find((sv) => sv.id === serviceId)
-  if (!s || s.balance === null) return '未维护'
-  return s.quota_limit !== null ? `${s.balance} / ${s.quota_limit}` : `${s.balance}`
+/** 工具密钥数量 */
+function secretCount(serviceId: string): number {
+  return store.secretsOf(serviceId).length
 }
 
 /** 消费记录金额展示（人民币） */
@@ -113,7 +110,7 @@ async function handleCreateUsage(input: AiUsageRecordInput) {
         <Sparkles class="h-12 w-12 text-muted-foreground/60" />
         <div class="space-y-1">
           <p class="font-medium">AI 中心还是空的</p>
-          <p class="text-sm text-muted-foreground">登记你常用的 AI 工具，统一管理密钥、余额与消费</p>
+          <p class="text-sm text-muted-foreground">登记你常用的 AI 工具，统一管理控制台、密钥与消费</p>
         </div>
         <div class="flex gap-3">
           <RouterLink to="/ai/tools">
@@ -157,24 +154,15 @@ async function handleCreateUsage(input: AiUsageRecordInput) {
                 :key="s.id"
                 class="flex items-center gap-3 py-2.5 text-sm"
               >
-                <Badge variant="outline" :class="serviceTypeMeta(s.service_type).badgeClass" class="shrink-0">
-                  {{ serviceTypeMeta(s.service_type).label }}
+                <Badge variant="outline" :class="TOOL_KIND_META[s.kind ?? 'model_api']?.badgeClass" class="shrink-0">
+                  {{ TOOL_KIND_META[s.kind ?? 'model_api']?.label ?? '模型 API' }}
                 </Badge>
                 <div class="min-w-0 flex-1">
                   <p class="truncate font-medium">{{ s.name }}</p>
                   <p class="mt-0.5 text-xs text-muted-foreground">
-                    余额更新于 {{ s.balance_updated_at ? new Date(s.balance_updated_at).toLocaleDateString('zh-CN') : '—' }}
+                    {{ secretCount(s.id) }} 个密钥 · {{ s.console_url ? '已配置控制台' : '未配置控制台' }}
                   </p>
                 </div>
-                <Badge
-                  v-if="balanceFresh(s)"
-                  variant="outline"
-                  :class="balanceFresh(s)!.badgeClass"
-                  class="hidden sm:inline-flex"
-                >
-                  {{ balanceFresh(s)!.label }}
-                </Badge>
-                <span class="shrink-0 font-semibold tabular-nums">{{ balanceLabel(s.id) }}</span>
               </li>
             </ul>
             <p v-else class="py-8 text-center text-sm text-muted-foreground">暂无工具</p>
@@ -222,7 +210,7 @@ async function handleCreateUsage(input: AiUsageRecordInput) {
               </div>
               <p class="text-sm text-muted-foreground">
                 已存 <strong class="tabular-nums">{{ store.secrets.length }}</strong> 个密钥，
-                在工具列表中点击工具即可查看与维护。
+                在工具管理中点击密钥图标即可查看与维护。
               </p>
               <div class="mt-4 flex items-center gap-2 rounded-md border border-dashed bg-muted/30 p-3 text-xs text-muted-foreground">
                 <KeyRound class="h-4 w-4 shrink-0" />

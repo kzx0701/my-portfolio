@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import { Button, Dialog, Input, Label, Select, Textarea } from '@/components/ui'
 import DatePicker from '@/components/DatePicker.vue'
 import { toast } from '@/lib/toast'
 import { useAiStore } from '@/modules/ai/store'
-import { CONSUMPTION_TYPE_OPTIONS, currentDate, PAYMENT_METHOD_OPTIONS, SERVICE_TYPE_OPTIONS, type AiUsageRecord, type AiUsageRecordInput } from '@/modules/ai/types'
+import { CONSUMPTION_TYPE_OPTIONS, currentDate, PAYMENT_METHOD_OPTIONS, type AiUsageRecord, type AiUsageRecordInput } from '@/modules/ai/types'
 
 const props = defineProps<{
   open: boolean
@@ -21,17 +21,17 @@ const emit = defineEmits<{
 const store = useAiStore()
 
 /** 工具选项（消费归属） */
-const serviceOptions = SERVICE_TYPE_OPTIONS
+const serviceOptions = computed(() => store.services.map((service) => ({ value: service.id, label: service.name })))
 
 const form = reactive<{
-  service_type: string
+  service_id: string | null
   usage_date: string
   amount: number | ''
   payment_method: string | null
   consumption_type: string | null
   note: string | null
 }>({
-  service_type: 'deepseek',
+  service_id: null,
   usage_date: currentDate(),
   amount: '',
   payment_method: null,
@@ -45,10 +45,9 @@ watch(
     if (open) {
       // 编辑时从 service_id 反查 service_type
       if (props.record?.service_id) {
-        const svc = store.services.find((s) => s.id === props.record!.service_id)
-        form.service_type = svc?.service_type ?? 'deepseek'
+        form.service_id = props.record.service_id
       } else {
-        form.service_type = 'deepseek'
+        form.service_id = store.services[0]?.id ?? null
       }
       form.usage_date = props.record?.usage_date ?? currentDate()
       form.amount = props.record?.amount ?? ''
@@ -68,30 +67,13 @@ async function handleSubmit() {
     toast('请填写消费金额（¥）', 'error')
     return
   }
-
-  // 查找或创建对应的工具记录
-  let service = store.services.find((s) => s.service_type === form.service_type)
-  if (!service) {
-    // 自动创建工具记录
-    const meta = SERVICE_TYPE_OPTIONS.find((o) => o.value === form.service_type)
-    service = await store.createService({
-      name: meta?.label ?? form.service_type,
-      service_type: form.service_type as any,
-      kind: 'model_api',
-      plan: null,
-      base_url: null,
-      balance_query_url: null,
-      console_url: null,
-      balance: null,
-      balance_updated_at: null,
-      quota_limit: null,
-      quota_reset_time: null,
-      note: null,
-    })
+  if (!form.service_id) {
+    toast('请先在工具管理中添加工具', 'error')
+    return
   }
 
   emit('submit', {
-    service_id: service.id,
+    service_id: form.service_id,
     usage_date: form.usage_date,
     amount: Number(form.amount),
     payment_method: form.payment_method,
@@ -112,7 +94,7 @@ async function handleSubmit() {
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="space-y-2">
           <Label for="usage-service">工具 *</Label>
-          <Select id="usage-service" v-model="form.service_type" :options="serviceOptions" placeholder="选择工具" />
+          <Select id="usage-service" v-model="form.service_id" :options="serviceOptions" placeholder="选择工具" />
         </div>
         <div class="space-y-2">
           <Label for="usage-date">消费日期 *</Label>

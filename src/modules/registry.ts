@@ -101,7 +101,7 @@ export const modules: ModuleMeta[] = [
   {
     key: 'ai',
     title: 'AI 中心',
-    description: '管理 AI 工具账号、密钥、消费记录与剩余额度。',
+    description: '管理 AI 工具、控制台和密钥记录。',
     path: '/ai',
     icon: Sparkles,
     order: 4,
@@ -109,7 +109,7 @@ export const modules: ModuleMeta[] = [
     children: [
       { key: 'ai-dashboard', title: '仪表盘', path: '/ai', icon: LayoutDashboard },
       { key: 'ai-usage', title: '消费记录', path: '/ai/usage', icon: Receipt },
-      { key: 'ai-tools', title: '工具列表', path: '/ai/tools', icon: Wrench },
+      { key: 'ai-tools', title: '工具管理', path: '/ai/tools', icon: Wrench },
     ],
   },
   {

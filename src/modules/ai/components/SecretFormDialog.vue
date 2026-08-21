@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
-import { Button, Dialog, Input, Label, Select, Textarea } from '@/components/ui'
+import { reactive, ref, watch } from 'vue'
+import { Eye, EyeOff } from '@lucide/vue'
+import { Button, Dialog, Input, Label, Textarea } from '@/components/ui'
 import { toast } from '@/lib/toast'
 import { maskKey, type AiSecret, type AiSecretInput } from '@/modules/ai/types'
-import { useAiStore } from '@/modules/ai/store'
-import { computed } from 'vue'
 
 const props = defineProps<{
   open: boolean
@@ -18,13 +17,6 @@ const emit = defineEmits<{
   submit: [input: AiSecretInput]
 }>()
 
-const store = useAiStore()
-
-/** 密钥可关联的工具（详情弹窗内已固定 service_id，此处仅新建入口可选） */
-const serviceOptions = computed(() =>
-  store.services.map((s) => ({ value: s.id, label: s.name })),
-)
-
 const form = reactive<Omit<AiSecretInput, 'key_value'> & { key_value: string }>({
   service_id: null,
   name: '',
@@ -33,16 +25,19 @@ const form = reactive<Omit<AiSecretInput, 'key_value'> & { key_value: string }>(
   note: null,
 })
 
+const showKey = ref(false)
+
 watch(
   () => props.open,
   (open) => {
     if (open) {
-      form.service_id = props.secret?.service_id ?? store.services[0]?.id ?? null
+      form.service_id = props.secret?.service_id ?? null
       form.name = props.secret?.name ?? ''
       form.service = props.secret?.service ?? null
       // 编辑时明文不回填（避免明文常驻输入框）；留空 = 保持原密钥不变
       form.key_value = ''
       form.note = props.secret?.note ?? null
+      showKey.value = false
     }
   },
 )
@@ -73,30 +68,37 @@ function handleSubmit() {
   <Dialog
     :open="open"
     :title="secret ? '编辑密钥' : '新建密钥'"
-    description="用于存放 AI API Key、工具 Token 等凭据；列表中仅显示打码片段，复制时才取用明文。"
+    description="保管 API Key、Token 等凭据；保存后默认显示打码片段。"
     @update:open="emit('update:open', $event)"
   >
     <form class="space-y-4" @submit.prevent="handleSubmit">
-      <div class="grid gap-4 sm:grid-cols-2">
-        <div class="space-y-2">
-          <Label for="ai-secret-name">名称 *</Label>
-          <Input id="ai-secret-name" v-model="form.name" placeholder="如：OpenAI API Key" required />
-        </div>
-        <div class="space-y-2">
-          <Label for="ai-secret-service">所属工具</Label>
-          <Select id="ai-secret-service" v-model="form.service_id" :options="serviceOptions" placeholder="选择工具" />
-        </div>
+      <div class="space-y-2">
+        <Label for="ai-secret-name">名称 *</Label>
+        <Input id="ai-secret-name" v-model="form.name" placeholder="如：OpenAI API Key" required />
       </div>
 
       <div class="space-y-2">
         <Label for="ai-secret-value">密钥内容{{ secret ? '（选填）' : ' *' }}</Label>
-        <Input
-          id="ai-secret-value"
-          v-model="form.key_value"
-          type="password"
-          autocomplete="new-password"
-          :placeholder="secret ? `留空保持原值（当前：${maskKey(secret.key_value)}）` : '粘贴密钥内容'"
-        />
+        <div class="relative">
+          <Input
+            id="ai-secret-value"
+            v-model="form.key_value"
+            :type="showKey ? 'text' : 'password'"
+            autocomplete="new-password"
+            class="pr-10"
+            :placeholder="secret ? `留空保持原值（当前：${maskKey(secret.key_value)}）` : '粘贴密钥内容'"
+          />
+          <button
+            type="button"
+            class="absolute right-0 top-0 flex h-full w-10 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+            :title="showKey ? '隐藏密钥' : '显示密钥'"
+            :aria-label="showKey ? '隐藏密钥' : '显示密钥'"
+            @click="showKey = !showKey"
+          >
+            <EyeOff v-if="showKey" class="h-4 w-4" />
+            <Eye v-else class="h-4 w-4" />
+          </button>
+        </div>
         <p v-if="secret" class="text-xs text-muted-foreground">编辑时留空则保持原密钥不变</p>
       </div>
 

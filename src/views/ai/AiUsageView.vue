@@ -4,7 +4,7 @@ import { Pencil, Plus, Receipt, RotateCw, Trash2 } from '@lucide/vue'
 import { Badge, Button, Select, Skeleton, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { useAiStore } from '@/modules/ai/store'
 import { AiUsageStats, UsageDeleteDialog, UsageFormDialog } from '@/modules/ai/components'
-import { type AiUsageRecord, type AiUsageRecordInput, consumptionTypeMeta, paymentMethodMeta, serviceTypeMeta } from '@/modules/ai/types'
+import { type AiUsageRecord, type AiUsageRecordInput, consumptionTypeMeta, paymentMethodMeta } from '@/modules/ai/types'
 import { toast } from '@/lib/toast'
 
 const store = useAiStore()
@@ -82,7 +82,7 @@ function goToPage(page: number) {
 /** 工具名映射 */
 function serviceName(id: string): string {
   const svc = store.services.find((s) => s.id === id)
-  return svc ? serviceTypeMeta(svc.service_type).label : '未知工具'
+  return svc?.name ?? '未知工具'
 }
 
 /** 日期展示（YYYY-MM-DD 原样，便于识别） */

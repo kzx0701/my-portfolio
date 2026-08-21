@@ -5,8 +5,8 @@ import wechatLogo from '@/assets/images/channels/wechat.svg'
 /** AI 工具账号（对应 Supabase 表 ai_services） */
 export type AiService = Database['public']['Tables']['ai_services']['Row']
 
-/** 新建 / 编辑工具的入参 */
-export type AiServiceInput = Omit<AiService, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+/** 工具管理只编辑的基础字段；余额、接口等历史字段不再进入工具表单。 */
+export type AiServiceInput = Pick<AiService, 'name' | 'service_type' | 'kind' | 'console_url'>
 
 /** AI 消费记录（对应 Supabase 表 ai_usage_records） */
 export type AiUsageRecord = Database['public']['Tables']['ai_usage_records']['Row']
@@ -85,41 +85,6 @@ export const SERVICE_TYPE_OPTIONS = Object.keys(SERVICE_TYPE_META).map((value) =
 export function serviceTypeMeta(type: string | null): { label: string; badgeClass: string } {
   if (type && SERVICE_TYPE_META[type]) return SERVICE_TYPE_META[type]
   return { label: '其他', badgeClass: 'border-gray-500/30 bg-gray-500/10 text-gray-700 dark:text-gray-400' }
-}
-
-/** 余额新鲜度判定结果 */
-export interface BalanceFresh {
-  /** 是否已过期（超过 7 天未更新） */
-  stale: boolean
-  label: string
-  badgeClass: string
-}
-
-/** 余额新鲜度提示：记录余额但超过 7 天未更新 → 弱提示可能过期；未记录更新时间 → 提示补录 */
-export function balanceFresh(service: Pick<AiService, 'balance' | 'balance_updated_at'>): BalanceFresh | null {
-  if (service.balance === null || service.balance === undefined) return null
-  if (!service.balance_updated_at) {
-    return {
-      stale: false,
-      label: '未记录更新时间',
-      badgeClass: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400',
-    }
-  }
-  const updated = new Date(service.balance_updated_at)
-  if (Number.isNaN(updated.getTime())) return null
-  const days = Math.floor((Date.now() - updated.getTime()) / 86400000)
-  if (days > 7) {
-    return {
-      stale: true,
-      label: `余额已 ${days} 天未更新`,
-      badgeClass: 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400',
-    }
-  }
-  return {
-    stale: false,
-    label: days === 0 ? '今天更新' : `${days} 天前更新`,
-    badgeClass: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
-  }
 }
 
 /** 支付方式（ai_usage_records.payment_method，仅微信/支付宝；logo 本地素材，列表与下拉同构于订单渠道） */

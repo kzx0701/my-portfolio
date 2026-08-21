@@ -52,6 +52,15 @@ export type AiServiceTypeLiteral =
 /** AI 工具形态（ai_services.kind，前端 TOOL_KIND_META 预设：model_api 官方模型 API / agent Agent 工具 / relay 中转站） */
 export type AiServiceKindLiteral = 'model_api' | 'agent' | 'relay'
 
+/** AI 工具余额查询方式：手动维护 / 平台预设接口 / 自定义接口 */
+export type AiBalanceQueryModeLiteral = 'manual' | 'provider' | 'custom'
+
+/** AI 对话调用协议（首期支持 OpenAI 兼容接口） */
+export type AiChatProtocolLiteral = 'openai_compatible'
+
+/** AI 对话鉴权方式：Authorization Bearer 或厂商自定义 API Key 请求头 */
+export type AiChatAuthTypeLiteral = 'bearer' | 'api_key'
+
 export type Database = {
   public: {
     Tables: {
@@ -366,6 +375,8 @@ export type Database = {
           plan: string | null
           base_url: string | null
           balance_query_url: string | null
+          balance_query_mode: AiBalanceQueryModeLiteral | null
+          balance_secret_id: string | null
           console_url: string | null
           balance: number | null
           balance_updated_at: string | null
@@ -384,6 +395,8 @@ export type Database = {
           plan?: string | null
           base_url?: string | null
           balance_query_url?: string | null
+          balance_query_mode?: AiBalanceQueryModeLiteral | null
+          balance_secret_id?: string | null
           console_url?: string | null
           balance?: number | null
           balance_updated_at?: string | null
@@ -402,6 +415,8 @@ export type Database = {
           plan?: string | null
           base_url?: string | null
           balance_query_url?: string | null
+          balance_query_mode?: AiBalanceQueryModeLiteral | null
+          balance_secret_id?: string | null
           console_url?: string | null
           balance?: number | null
           balance_updated_at?: string | null
@@ -417,6 +432,13 @@ export type Database = {
             columns: ['user_id']
             isOneToOne: false
             referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ai_services_balance_secret_id_fkey'
+            columns: ['balance_secret_id']
+            isOneToOne: false
+            referencedRelation: 'ai_secrets'
             referencedColumns: ['id']
           },
         ]
@@ -524,12 +546,90 @@ export type Database = {
             referencedRelation: 'ai_services'
             referencedColumns: ['id']
           },
+          {
+            foreignKeyName: 'ai_services_balance_secret_id_fkey'
+            columns: ['id']
+            isOneToOne: false
+            referencedRelation: 'ai_services'
+            referencedColumns: ['balance_secret_id']
+          },
+        ]
+      }
+      ai_chat_models: {
+        Row: {
+          id: string
+          user_id: string
+          service_id: string
+          secret_id: string | null
+          display_name: string
+          model_id: string
+          protocol: AiChatProtocolLiteral
+          auth_type: AiChatAuthTypeLiteral
+          endpoint_url: string | null
+          enabled: boolean
+          is_default: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          service_id: string
+          secret_id?: string | null
+          display_name: string
+          model_id: string
+          protocol?: AiChatProtocolLiteral
+          auth_type?: AiChatAuthTypeLiteral
+          endpoint_url?: string | null
+          enabled?: boolean
+          is_default?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          service_id?: string
+          secret_id?: string | null
+          display_name?: string
+          model_id?: string
+          protocol?: AiChatProtocolLiteral
+          auth_type?: AiChatAuthTypeLiteral
+          endpoint_url?: string | null
+          enabled?: boolean
+          is_default?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ai_chat_models_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ai_chat_models_service_id_fkey'
+            columns: ['service_id']
+            isOneToOne: false
+            referencedRelation: 'ai_services'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ai_chat_models_secret_id_fkey'
+            columns: ['secret_id']
+            isOneToOne: false
+            referencedRelation: 'ai_secrets'
+            referencedColumns: ['id']
+          },
         ]
       }
       ai_chat_conversations: {
         Row: {
           id: string
           user_id: string
+          chat_model_id: string | null
           title: string
           created_at: string
           updated_at: string
@@ -537,6 +637,7 @@ export type Database = {
         Insert: {
           id?: string
           user_id: string
+          chat_model_id?: string | null
           title?: string
           created_at?: string
           updated_at?: string
@@ -544,6 +645,7 @@ export type Database = {
         Update: {
           id?: string
           user_id?: string
+          chat_model_id?: string | null
           title?: string
           created_at?: string
           updated_at?: string
@@ -554,6 +656,13 @@ export type Database = {
             columns: ['user_id']
             isOneToOne: false
             referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ai_chat_conversations_chat_model_id_fkey'
+            columns: ['chat_model_id']
+            isOneToOne: false
+            referencedRelation: 'ai_chat_models'
             referencedColumns: ['id']
           },
         ]

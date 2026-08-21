@@ -1,5 +1,8 @@
 export { default as ToolFormDialog } from './ToolFormDialog.vue'
 export { default as ToolDetailDialog } from './ToolDetailDialog.vue'
+export { default as ChatModelDialog } from './ChatModelDialog.vue'
+export { default as ChatModelFormDialog } from './ChatModelFormDialog.vue'
+export { default as ChatModelDeleteDialog } from './ChatModelDeleteDialog.vue'
 export { default as ToolDeleteDialog } from './ToolDeleteDialog.vue'
 export { default as ToolTable } from './ToolTable.vue'
 export { default as UsageFormDialog } from './UsageFormDialog.vue'

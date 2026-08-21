@@ -483,6 +483,8 @@ grant select, insert, update, delete on table public.knowledge_articles to authe
 -- balance：当前剩余额度（积分 / 金额，手工维护）
 -- balance_updated_at：余额最后更新时间（仪表盘按此做新鲜度提示：超 7 天提醒可能过期）
 -- quota_limit / quota_reset_time：周期配额模型（如 WorkBuddy 企业版每月额度 + 重置时间；非周期制工具可空）
+-- balance_query_mode：manual 手动维护 / provider 平台预设接口 / custom 自定义接口
+-- balance_secret_id：明确指定用于余额查询的 ai_secrets 密钥
 -- service_type：前端 SERVICE_TYPE_META 预设（workbuddy/trae/relay/other），无 check 可扩展
 create table if not exists public.ai_services (
   id uuid primary key default gen_random_uuid(),
@@ -493,6 +495,8 @@ create table if not exists public.ai_services (
   plan text,
   base_url text,
   balance_query_url text,
+  balance_query_mode text not null default 'manual',
+  balance_secret_id uuid,
   balance numeric(12, 2),
   balance_updated_at timestamptz,
   quota_limit numeric(12, 2),
@@ -507,6 +511,18 @@ create table if not exists public.ai_services (
 -- balance_query_url：余额查询接口地址（模型 API 类自动查余量用；Agent 类可空）
 alter table public.ai_services add column if not exists kind text;
 alter table public.ai_services add column if not exists balance_query_url text;
+alter table public.ai_services add column if not exists balance_query_mode text;
+alter table public.ai_services add column if not exists balance_secret_id uuid;
+
+-- 旧数据兼容：已有查询地址的工具继续保留可查询能力，未配置地址的工具改为手动维护
+update public.ai_services
+set balance_query_mode = case
+  when balance_query_url is null or trim(balance_query_url) = '' then 'manual'
+  else 'custom'
+end
+where balance_query_mode is null;
+alter table public.ai_services alter column balance_query_mode set default 'manual';
+alter table public.ai_services alter column balance_query_mode set not null;
 
 -- ---------- 30. ai_services 更新时间触发器（复用 handle_updated_at 函数） ----------
 drop trigger if exists set_ai_services_updated_at on public.ai_services;
@@ -647,6 +663,45 @@ create index if not exists idx_ai_secrets_created_at on public.ai_secrets (creat
 -- ---------- 40. ai_secrets RLS：每个用户只能读写自己的密钥 ----------
 alter table public.ai_secrets enable row level security;
 
+-- 旧工具兼容：已有自动查询配置时，默认绑定该工具最早的一条密钥，避免升级后无法刷新
+update public.ai_services s
+set balance_secret_id = (
+  select secret.id
+  from public.ai_secrets secret
+  where secret.service_id = s.id
+    and secret.key_value is not null
+  order by secret.created_at asc
+  limit 1
+)
+where s.balance_query_mode <> 'manual'
+  and s.balance_secret_id is null;
+
+-- 清理可能残留的无效引用后再补充外键约束
+update public.ai_services s
+set balance_secret_id = null
+where s.balance_secret_id is not null
+  and not exists (
+    select 1 from public.ai_secrets secret where secret.id = s.balance_secret_id
+  );
+
+-- 余额查询密钥反向绑定（ai_secrets 表创建后补充外键，避免循环建表依赖）
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'ai_services_balance_secret_id_fkey'
+      and conrelid = 'public.ai_services'::regclass
+  ) then
+    alter table public.ai_services
+      add constraint ai_services_balance_secret_id_fkey
+      foreign key (balance_secret_id)
+      references public.ai_secrets (id)
+      on delete set null;
+  end if;
+end $$;
+
+create index if not exists idx_ai_services_balance_secret_id on public.ai_services (balance_secret_id);
+
 drop policy if exists "ai_secrets_select_own" on public.ai_secrets;
 create policy "ai_secrets_select_own" on public.ai_secrets
   for select using (auth.uid() = user_id);
@@ -672,14 +727,99 @@ alter table public.ai_services add column if not exists console_url text;
 -- AI 对话（ai_chat_conversations / ai_chat_messages）
 -- ============================================================
 
+-- ---------- 41. AI 对话模型配置（关联 AI 工具与密钥） ----------
+-- 一个 AI 工具可以配置多个可用于对话的模型；secret_id 只保存引用，不复制密钥内容。
+create table if not exists public.ai_chat_models (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  service_id uuid not null references public.ai_services (id) on delete cascade,
+  secret_id uuid references public.ai_secrets (id) on delete set null,
+  display_name text not null,
+  model_id text not null,
+  protocol text not null default 'openai_compatible',
+  auth_type text not null default 'bearer',
+  endpoint_url text,
+  enabled boolean not null default true,
+  is_default boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists set_ai_chat_models_updated_at on public.ai_chat_models;
+create trigger set_ai_chat_models_updated_at
+  before update on public.ai_chat_models
+  for each row
+  execute function public.handle_updated_at();
+
+create index if not exists idx_ai_chat_models_user_id on public.ai_chat_models (user_id);
+create index if not exists idx_ai_chat_models_service_id on public.ai_chat_models (service_id);
+create index if not exists idx_ai_chat_models_secret_id on public.ai_chat_models (secret_id);
+create index if not exists idx_ai_chat_models_enabled on public.ai_chat_models (user_id, enabled);
+
+alter table public.ai_chat_models add column if not exists auth_type text;
+alter table public.ai_chat_models alter column auth_type set default 'bearer';
+update public.ai_chat_models model
+set auth_type = 'api_key'
+from public.ai_services service
+where model.service_id = service.id
+  and service.service_type = 'xiaomi'
+  and (model.auth_type is null or model.auth_type = 'bearer');
+update public.ai_chat_models set auth_type = 'bearer' where auth_type is null;
+alter table public.ai_chat_models alter column auth_type set not null;
+
+create unique index if not exists idx_ai_chat_models_one_default
+  on public.ai_chat_models (user_id)
+  where is_default = true;
+
+alter table public.ai_chat_models enable row level security;
+
+drop policy if exists "ai_chat_models_select_own" on public.ai_chat_models;
+create policy "ai_chat_models_select_own" on public.ai_chat_models
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "ai_chat_models_insert_own" on public.ai_chat_models;
+create policy "ai_chat_models_insert_own" on public.ai_chat_models
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "ai_chat_models_update_own" on public.ai_chat_models;
+create policy "ai_chat_models_update_own" on public.ai_chat_models
+  for update using (auth.uid() = user_id);
+
+drop policy if exists "ai_chat_models_delete_own" on public.ai_chat_models;
+create policy "ai_chat_models_delete_own" on public.ai_chat_models
+  for delete using (auth.uid() = user_id);
+
+grant select, insert, update, delete on table public.ai_chat_models to authenticated;
+
 -- ---------- 41. 创建 ai_chat_conversations 表（对话会话） ----------
 create table if not exists public.ai_chat_conversations (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
+  chat_model_id uuid references public.ai_chat_models (id) on delete set null,
   title text not null default '新对话',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.ai_chat_conversations
+  add column if not exists chat_model_id uuid;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'ai_chat_conversations_chat_model_id_fkey'
+      and conrelid = 'public.ai_chat_conversations'::regclass
+  ) then
+    alter table public.ai_chat_conversations
+      add constraint ai_chat_conversations_chat_model_id_fkey
+      foreign key (chat_model_id)
+      references public.ai_chat_models (id)
+      on delete set null;
+  end if;
+end $$;
+
+create index if not exists idx_ai_chat_conversations_chat_model_id on public.ai_chat_conversations (chat_model_id);
 
 -- ---------- 42. 创建 ai_chat_messages 表（对话消息） ----------
 -- role: user / assistant / system
