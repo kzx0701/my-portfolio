@@ -19,10 +19,15 @@ const props = withDefaults(
     description?: string
     class?: string
     hideClose?: boolean
+    /** 非模态时不锁定弹窗外的指针事件，供全屏演示等覆盖层接管交互。 */
+    modal?: boolean
+    /** 自定义内容区域需要接管弹窗头部布局时，仅保留无障碍标题 */
+    hideHeader?: boolean
   }>(),
   {
     open: false,
     hideClose: false,
+    modal: true,
   },
 )
 
@@ -39,7 +44,7 @@ const contentClass = computed(() =>
 </script>
 
 <template>
-  <DialogRoot :open="open" @update:open="emit('update:open', $event)">
+  <DialogRoot :open="open" :modal="modal" @update:open="emit('update:open', $event)">
     <DialogPortal>
       <DialogOverlay
         class="fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0"
@@ -48,7 +53,7 @@ const contentClass = computed(() =>
         :class="contentClass"
         v-bind="description ? {} : { 'aria-describedby': undefined }"
       >
-        <div v-if="title || description" class="mb-4">
+        <div v-if="title || description" class="mb-4" :class="hideHeader && 'sr-only'">
           <DialogTitle v-if="title" class="text-lg font-semibold">{{ title }}</DialogTitle>
           <DialogDescription
             v-if="description"

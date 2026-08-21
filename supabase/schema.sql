@@ -417,11 +417,27 @@ create policy "health_profile_delete_own" on public.health_profile
 grant select, insert, update, delete on table public.health_profile to authenticated;
 
 -- ============================================================
--- 知识库（knowledge_articles / knowledge_secrets）
+-- 知识库（knowledge_articles）
 -- ============================================================
 
+-- 清理旧版本知识库密钥表；AI 密钥统一由 AI 中心的 ai_secrets 管理。
+drop table if exists public.knowledge_secrets;
+
+-- ---------- 24.5 创建 knowledge_directories 表（用户自定义位置，最多两级） ----------
+create table if not exists public.knowledge_directories (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  parent_id uuid references public.knowledge_directories (id) on delete restrict,
+  slug text not null,
+  name text not null,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint knowledge_directories_user_slug_key unique (user_id, slug)
+);
+
 -- ---------- 25. 创建 knowledge_articles 表（笔记：开发心得 / 知识沉淀） ----------
--- category：单选分类（前端 CATEGORY_META 预设：frontend/backend/ai/tools/notes，可扩展故不加 check，与 payments.stage 同思路）
+-- category：保存 knowledge_categories.slug；不加 check，便于用户自定义分类
 -- tags：多标签（text[]，自由组织）
 -- content：Markdown 正文
 -- is_pinned：置顶（列表置顶展示）
@@ -431,6 +447,7 @@ create table if not exists public.knowledge_articles (
   user_id uuid not null references auth.users (id) on delete cascade,
   title text not null,
   category text,
+  directory_id uuid references public.knowledge_directories (id) on delete set null,
   tags text[] not null default '{}',
   content text not null default '',
   is_pinned boolean not null default false,
@@ -438,6 +455,25 @@ create table if not exists public.knowledge_articles (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.knowledge_articles
+  add column if not exists directory_id uuid;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'knowledge_articles_directory_id_fkey'
+      and conrelid = 'public.knowledge_articles'::regclass
+  ) then
+    alter table public.knowledge_articles
+      add constraint knowledge_articles_directory_id_fkey
+      foreign key (directory_id)
+      references public.knowledge_directories (id)
+      on delete set null;
+  end if;
+end;
+$$;
 
 -- ---------- 26. knowledge_articles 更新时间触发器（复用 handle_updated_at 函数） ----------
 drop trigger if exists set_knowledge_articles_updated_at on public.knowledge_articles;
@@ -473,10 +509,149 @@ create policy "knowledge_articles_delete_own" on public.knowledge_articles
 -- ---------- 28.1 权限：仅授予登录用户（authenticated），anon 保持无权限（最小权限原则，RLS 兜底） ----------
 grant select, insert, update, delete on table public.knowledge_articles to authenticated;
 
+-- ---------- 28.2 创建 knowledge_categories 表（仅用户自定义分类） ----------
+create table if not exists public.knowledge_categories (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  slug text not null,
+  name text not null,
+  color text not null default 'sky',
+  is_default boolean not null default false,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint knowledge_categories_user_slug_key unique (user_id, slug)
+);
+
+-- 清理上一版本为用户自动生成的系统分类；已有知识文件保留，但恢复为未分类。
+update public.knowledge_articles as article
+set category = null
+where article.category is not null
+  and exists (
+    select 1
+    from public.knowledge_categories as category
+    where category.user_id = article.user_id
+      and category.slug = article.category
+      and category.is_default = true
+  );
+
+delete from public.knowledge_categories
+where is_default = true;
+
+-- 分类保持扁平；上一版本误将目录层级放在分类表中，这里只移除层级字段，不删除分类名称。
+drop trigger if exists validate_knowledge_category_parent on public.knowledge_categories;
+drop function if exists public.validate_knowledge_category_parent();
+drop index if exists idx_knowledge_categories_parent_id;
+alter table public.knowledge_categories drop column if exists parent_id;
+
+-- ---------- 28.3 knowledge_categories 更新时间触发器与索引 ----------
+drop trigger if exists set_knowledge_categories_updated_at on public.knowledge_categories;
+create trigger set_knowledge_categories_updated_at
+  before update on public.knowledge_categories
+  for each row
+  execute function public.handle_updated_at();
+
+create index if not exists idx_knowledge_categories_user_sort
+  on public.knowledge_categories (user_id, sort_order, created_at);
+
+-- ---------- 28.4 knowledge_categories RLS：每个用户只能读写自己的分类 ----------
+alter table public.knowledge_categories enable row level security;
+
+drop policy if exists "knowledge_categories_select_own" on public.knowledge_categories;
+create policy "knowledge_categories_select_own" on public.knowledge_categories
+  for select to authenticated using ((select auth.uid()) = user_id);
+
+drop policy if exists "knowledge_categories_insert_own" on public.knowledge_categories;
+create policy "knowledge_categories_insert_own" on public.knowledge_categories
+  for insert to authenticated with check ((select auth.uid()) = user_id);
+
+drop policy if exists "knowledge_categories_update_own" on public.knowledge_categories;
+create policy "knowledge_categories_update_own" on public.knowledge_categories
+  for update to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+
+drop policy if exists "knowledge_categories_delete_own" on public.knowledge_categories;
+create policy "knowledge_categories_delete_own" on public.knowledge_categories
+  for delete to authenticated using ((select auth.uid()) = user_id);
+
+grant select, insert, update, delete on table public.knowledge_categories to authenticated;
+
+-- ---------- 28.5 knowledge_directories 触发器、索引与 RLS ----------
+drop trigger if exists set_knowledge_directories_updated_at on public.knowledge_directories;
+create trigger set_knowledge_directories_updated_at
+  before update on public.knowledge_directories
+  for each row
+  execute function public.handle_updated_at();
+
+create index if not exists idx_knowledge_directories_user_parent
+  on public.knowledge_directories (user_id, parent_id, sort_order);
+
+create or replace function public.validate_knowledge_directory_parent()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+  parent_parent_id uuid;
+begin
+  if new.parent_id is null then
+    return new;
+  end if;
+
+  if new.parent_id = new.id then
+    raise exception 'knowledge directory cannot be its own parent';
+  end if;
+
+  select parent_id
+    into parent_parent_id
+    from public.knowledge_directories
+   where id = new.parent_id
+     and user_id = new.user_id;
+
+  if not found then
+    raise exception 'knowledge directory parent must belong to the same user';
+  end if;
+
+  if parent_parent_id is not null then
+    raise exception 'knowledge directories support a maximum depth of two levels';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists validate_knowledge_directory_parent on public.knowledge_directories;
+create trigger validate_knowledge_directory_parent
+  before insert or update of parent_id, user_id on public.knowledge_directories
+  for each row
+  execute function public.validate_knowledge_directory_parent();
+
+alter table public.knowledge_directories enable row level security;
+
+drop policy if exists "knowledge_directories_select_own" on public.knowledge_directories;
+create policy "knowledge_directories_select_own" on public.knowledge_directories
+  for select to authenticated using ((select auth.uid()) = user_id);
+
+drop policy if exists "knowledge_directories_insert_own" on public.knowledge_directories;
+create policy "knowledge_directories_insert_own" on public.knowledge_directories
+  for insert to authenticated with check ((select auth.uid()) = user_id);
+
+drop policy if exists "knowledge_directories_update_own" on public.knowledge_directories;
+create policy "knowledge_directories_update_own" on public.knowledge_directories
+  for update to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+
+drop policy if exists "knowledge_directories_delete_own" on public.knowledge_directories;
+create policy "knowledge_directories_delete_own" on public.knowledge_directories
+  for delete to authenticated using ((select auth.uid()) = user_id);
+
+grant select, insert, update, delete on table public.knowledge_directories to authenticated;
+
 -- ============================================================
 -- AI 中心（ai_services / ai_usage_records / ai_secrets）
--- 说明：密钥管理自知识库迁出至本模块（knowledge_secrets 段已移除，
--- 因其未在线上建表，直接重定义为 ai_secrets，无数据迁移负担）
+-- 说明：AI 密钥只属于 AI 中心，知识库不承担任何密钥管理职责。
 -- ============================================================
 
 -- ---------- 29. 创建 ai_services 表（AI 工具账号：余额与周期配额手工维护） ----------

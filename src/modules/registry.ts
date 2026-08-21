@@ -88,14 +88,14 @@ export const modules: ModuleMeta[] = [
   {
     key: 'knowledge',
     title: '知识库',
-    description: '沉淀开发心得与知识笔记，分类标签组织，随时检索。',
+    description: '记录与检索知识文件，用分类和标签组织内容。',
     path: '/knowledge',
     icon: BookOpen,
     order: 3,
     active: true,
     children: [
       { key: 'knowledge-dashboard', title: '仪表盘', path: '/knowledge', icon: LayoutDashboard },
-      { key: 'knowledge-articles', title: '笔记列表', path: '/knowledge/articles', icon: FileText },
+      { key: 'knowledge-articles', title: '知识文件', path: '/knowledge/articles', icon: FileText },
     ],
   },
   {

@@ -26,8 +26,8 @@ const stats = computed(() => [
   },
   {
     title: '笔记分类',
-    value: new Set(store.articles.map((a) => a.category).filter(Boolean)).size,
-    hint: '分类数（去重）',
+    value: store.categories.length,
+    hint: '已配置分类',
     icon: FolderOpen,
     iconClass: 'bg-gradient-to-br from-teal-400 to-emerald-500',
     accentClass: 'bg-linear-to-r from-teal-400 to-emerald-500',

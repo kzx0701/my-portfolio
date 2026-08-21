@@ -33,7 +33,7 @@ export type HealthGoalTypeLiteral = 'fat_loss' | 'muscle_gain' | 'maintain'
 /** 健康目标状态（health_goal.status check 约束） */
 export type HealthGoalStatusLiteral = 'in_progress' | 'completed' | 'cancelled'
 
-/** 笔记分类（knowledge_articles.category，前端 CATEGORY_META 预设，库中无 check 约束可扩展） */
+/** 旧版默认分类值；knowledge_articles.category 实际允许用户自定义 slug */
 export type KnowledgeCategoryLiteral = 'frontend' | 'backend' | 'ai' | 'tools' | 'notes'
 
 /** AI 工具类型（ai_services.service_type，前端 SERVICE_TYPE_META 预设平台，库中无 check 约束可扩展） */
@@ -323,7 +323,8 @@ export type Database = {
           id: string
           user_id: string
           title: string
-          category: KnowledgeCategoryLiteral | null
+          category: string | null
+          directory_id: string | null
           tags: string[]
           content: string
           is_pinned: boolean
@@ -335,7 +336,8 @@ export type Database = {
           id?: string
           user_id: string
           title: string
-          category?: KnowledgeCategoryLiteral | null
+          category?: string | null
+          directory_id?: string | null
           tags?: string[]
           content?: string
           is_pinned?: boolean
@@ -347,7 +349,8 @@ export type Database = {
           id?: string
           user_id?: string
           title?: string
-          category?: KnowledgeCategoryLiteral | null
+          category?: string | null
+          directory_id?: string | null
           tags?: string[]
           content?: string
           is_pinned?: boolean
@@ -358,6 +361,98 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'knowledge_articles_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      knowledge_categories: {
+        Row: {
+          id: string
+          user_id: string
+          slug: string
+          name: string
+          color: string
+          is_default: boolean
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          slug: string
+          name: string
+          color?: string
+          is_default?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          slug?: string
+          name?: string
+          color?: string
+          is_default?: boolean
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'knowledge_categories_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      knowledge_directories: {
+        Row: {
+          id: string
+          user_id: string
+          parent_id: string | null
+          slug: string
+          name: string
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          parent_id?: string | null
+          slug: string
+          name: string
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          parent_id?: string | null
+          slug?: string
+          name?: string
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'knowledge_directories_parent_id_fkey'
+            columns: ['parent_id']
+            isOneToOne: false
+            referencedRelation: 'knowledge_directories'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'knowledge_directories_user_id_fkey'
             columns: ['user_id']
             isOneToOne: false
             referencedRelation: 'users'

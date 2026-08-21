@@ -1,48 +1,71 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { BookOpen, FileText, Pin, PinOff, Plus, RotateCw, Search } from '@lucide/vue'
-import { Badge, Button, Input, Skeleton } from '@/components/ui'
+import { BookOpen, FileText, FolderTree, Pin, PinOff, Plus, RotateCw, Search, Settings2 } from '@lucide/vue'
+import { Badge, Button, Input, Select, Skeleton } from '@/components/ui'
 import { useKnowledgeStore } from '@/modules/knowledge/store'
 import {
   ArticleDeleteDialog,
   ArticleFormDialog,
   ArticleViewDialog,
+  KnowledgeCategoryManager,
+  KnowledgeDirectoryManager,
+  KnowledgePresentationOverlay,
 } from '@/modules/knowledge/components'
 import {
-  CATEGORY_META,
   categoryMeta,
+  directoryOptions,
+  directoryPath,
+  type KnowledgeCategoryInput,
   type KnowledgeArticle,
   type KnowledgeArticleInput,
+  type KnowledgeDirectoryInput,
 } from '@/modules/knowledge/types'
 import { toast } from '@/lib/toast'
 
 const store = useKnowledgeStore()
 
-/** 关键词搜索（匹配标题 / 正文 / 标签） */
+/** 关键词搜索（匹配标题 / 正文） */
 const searchText = ref('')
 /** 分类筛选：'all' 表示全部 */
 const categoryFilter = ref<'all' | string>('all')
+/** 目录筛选：'all' 表示全部目录 */
+const directoryFilter = ref<'all' | string>('all')
 
 const formOpen = ref(false)
+const categoryManagerOpen = ref(false)
+const directoryManagerOpen = ref(false)
 const editingArticle = ref<KnowledgeArticle | null>(null)
 const viewingArticle = ref<KnowledgeArticle | null>(null)
+/** 演示状态独立于预览弹窗，由页面顶层覆盖层承载。 */
+const presentationArticle = ref<KnowledgeArticle | null>(null)
 const deleteTarget = ref<KnowledgeArticle | null>(null)
 const submitting = ref(false)
 const deleting = ref(false)
 const refreshing = ref(false)
+const categorySubmitting = ref(false)
+const directorySubmitting = ref(false)
 
 onMounted(() => {
   store.fetchArticles()
 })
 
-/** 分类筛选选项（全部 + 已用分类） */
+/** 分类筛选选项（全部 + 已配置分类） */
 const categoryOptions = computed(() => {
-  const used = new Set<string>()
-  for (const a of store.articles) {
-    if (a.category) used.add(a.category)
-  }
-  return ['all', ...used]
+  return ['all', ...store.categories.map((category) => category.slug)]
 })
+const directoryFilterOptions = computed(() => [
+  { value: 'all', label: '全部目录' },
+  ...directoryOptions(store.directories),
+])
+
+const articleCountByCategory = computed(() => store.articles.reduce<Record<string, number>>((counts, article) => {
+  if (article.category) counts[article.category] = (counts[article.category] ?? 0) + 1
+  return counts
+}, {}))
+const articleCountByDirectory = computed(() => store.articles.reduce<Record<string, number>>((counts, article) => {
+  if (article.directory_id) counts[article.directory_id] = (counts[article.directory_id] ?? 0) + 1
+  return counts
+}, {}))
 
 /** 前端过滤：关键词 + 分类；归档默认隐藏（避免列表被旧内容淹没） */
 const filteredArticles = computed(() => {
@@ -50,11 +73,11 @@ const filteredArticles = computed(() => {
   return store.articles.filter((a) => {
     if (a.is_archived) return false
     if (categoryFilter.value !== 'all' && a.category !== categoryFilter.value) return false
+    if (directoryFilter.value !== 'all' && a.directory_id !== directoryFilter.value) return false
     if (!kw) return true
     return (
       a.title.toLowerCase().includes(kw) ||
-      a.content.toLowerCase().includes(kw) ||
-      a.tags.some((t) => t.toLowerCase().includes(kw))
+      a.content.toLowerCase().includes(kw)
     )
   })
 })
@@ -111,6 +134,23 @@ function openView(article: KnowledgeArticle) {
   viewingArticle.value = article
 }
 
+function handlePresent(article: KnowledgeArticle) {
+  presentationArticle.value = article
+  // 在用户点击的同步链路中请求原生全屏，确保浏览器不会因缺少手势而拒绝。
+  if (typeof document !== 'undefined' && document.fullscreenEnabled && !document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {
+      // 浏览器拒绝时，KnowledgePresentationOverlay 仍会以整页覆盖层展示该文章。
+    })
+  }
+}
+
+function handleExitPresentation() {
+  const article = presentationArticle.value
+  presentationArticle.value = null
+  // 演示结束后回到原文件的预览，而不是工作台列表。
+  if (article) viewingArticle.value = article
+}
+
 async function handleTogglePinned(article: KnowledgeArticle) {
   try {
     await store.togglePinned(article.id)
@@ -136,6 +176,99 @@ async function handleSubmit(input: KnowledgeArticleInput) {
     toast(e?.message ?? '保存失败', 'error')
   } finally {
     submitting.value = false
+  }
+}
+
+async function handleCreateCategory(input: KnowledgeCategoryInput) {
+  categorySubmitting.value = true
+  try {
+    await store.createCategory(input)
+    toast('分类已添加', 'success')
+  } catch (e: any) {
+    toast(e?.message ?? '添加分类失败', 'error')
+  } finally {
+    categorySubmitting.value = false
+  }
+}
+
+async function handleUpdateCategory(id: string, input: KnowledgeCategoryInput) {
+  categorySubmitting.value = true
+  try {
+    await store.updateCategory(id, input)
+    toast('分类已更新', 'success')
+  } catch (e: any) {
+    toast(e?.message ?? '更新分类失败', 'error')
+  } finally {
+    categorySubmitting.value = false
+  }
+}
+
+async function handleRemoveCategory(id: string) {
+  const target = store.categories.find((category) => category.id === id)
+  if (!target) return
+  const count = articleCountByCategory.value[target.slug] ?? 0
+  if (count > 0) {
+    toast(`「${target.name}」下还有 ${count} 篇知识文件，请先移除分类再删除`, 'error')
+    return
+  }
+  categorySubmitting.value = true
+  try {
+    await store.deleteCategory(id)
+    if (categoryFilter.value === target.slug) categoryFilter.value = 'all'
+    toast('分类已删除', 'success')
+  } catch (e: any) {
+    toast(e?.message ?? '删除分类失败', 'error')
+  } finally {
+    categorySubmitting.value = false
+  }
+}
+
+async function handleCreateDirectory(input: KnowledgeDirectoryInput) {
+  directorySubmitting.value = true
+  try {
+    await store.createDirectory(input)
+    toast('目录已创建', 'success')
+  } catch (e: any) {
+    toast(e?.message ?? '创建目录失败', 'error')
+  } finally {
+    directorySubmitting.value = false
+  }
+}
+
+async function handleUpdateDirectory(id: string, input: KnowledgeDirectoryInput) {
+  directorySubmitting.value = true
+  try {
+    await store.updateDirectory(id, input)
+    toast('目录已更新', 'success')
+  } catch (e: any) {
+    toast(e?.message ?? '更新目录失败', 'error')
+  } finally {
+    directorySubmitting.value = false
+  }
+}
+
+async function handleRemoveDirectory(id: string) {
+  const target = store.directories.find((directory) => directory.id === id)
+  if (!target) return
+  const count = articleCountByDirectory.value[id] ?? 0
+  const hasChildren = store.directories.some((directory) => directory.parent_id === id)
+  if (count > 0) {
+    toast(`「${target.name}」下还有 ${count} 篇知识文件，请先移除目录再删除`, 'error')
+    return
+  }
+  if (hasChildren) {
+    toast(`「${target.name}」下还有子目录，请先删除子目录`, 'error')
+    return
+  }
+  directorySubmitting.value = true
+  try {
+    await store.deleteDirectory(id)
+    if (directoryFilter.value === id) directoryFilter.value = 'all'
+    toast('目录已删除', 'success')
+  } catch (e: any) {
+    toast(e?.message ?? '删除目录失败', 'error')
+  } finally {
+    directorySubmitting.value = false
   }
 }
 
@@ -168,10 +301,18 @@ async function handleDeleteConfirm() {
           <BookOpen class="h-5 w-5" />
         </div>
         <div>
-          <h2 class="text-lg font-semibold">笔记列表</h2>
+          <h2 class="text-lg font-semibold">知识文件</h2>
         </div>
       </div>
-      <div class="flex shrink-0 items-center gap-2">
+      <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
+        <Button variant="outline" @click="categoryManagerOpen = true">
+          <Settings2 class="h-4 w-4" />
+          分类标签
+        </Button>
+        <Button variant="outline" @click="directoryManagerOpen = true">
+          <FolderTree class="h-4 w-4" />
+          目录配置
+        </Button>
         <Button variant="outline" :disabled="store.loading || refreshing" @click="handleRefresh">
           <RotateCw class="h-4 w-4" :class="refreshing && 'animate-spin'" />
           刷新
@@ -187,8 +328,9 @@ async function handleDeleteConfirm() {
     <div class="flex flex-wrap items-center gap-3">
       <div class="relative w-full max-w-xs">
         <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input v-model="searchText" class="pl-9" placeholder="搜索标题、正文、标签…" />
+        <Input v-model="searchText" class="pl-9" placeholder="搜索标题或正文…" />
       </div>
+      <Select v-model="directoryFilter" :options="directoryFilterOptions" class="w-44" />
       <div class="flex flex-wrap items-center gap-1.5">
         <button
           v-for="c in categoryOptions"
@@ -201,7 +343,7 @@ async function handleDeleteConfirm() {
           "
           @click="categoryFilter = c"
         >
-          {{ c === 'all' ? '全部' : CATEGORY_META[c]?.label ?? c }}
+          {{ c === 'all' ? '全部' : categoryMeta(c, store.categories).label }}
         </button>
       </div>
     </div>
@@ -216,7 +358,7 @@ async function handleDeleteConfirm() {
     <div v-else-if="isEmpty" class="rounded-lg border border-dashed py-16 text-center">
       <FileText class="mx-auto h-10 w-10 text-muted-foreground/60" />
       <p class="mt-3 font-medium">还没有笔记</p>
-      <p class="mt-1 text-sm text-muted-foreground">记录开发心得、踩坑经验、知识沉淀，随时检索</p>
+      <p class="mt-1 text-sm text-muted-foreground">把经验、流程和思考沉淀成可检索的知识文件</p>
       <Button class="mt-4" @click="openCreate">
         <Plus class="h-4 w-4" />
         写第一篇笔记
@@ -231,8 +373,8 @@ async function handleDeleteConfirm() {
       >
         <div class="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-sky-400 to-teal-500 opacity-0 transition-opacity group-hover:opacity-100" />
         <div class="flex items-start justify-between gap-2">
-          <Badge variant="outline" :class="categoryMeta(a.category).badgeClass">
-            {{ categoryMeta(a.category).label }}
+          <Badge variant="outline" :class="categoryMeta(a.category, store.categories).badgeClass">
+            {{ categoryMeta(a.category, store.categories).label }}
           </Badge>
           <span
             role="button"
@@ -247,12 +389,12 @@ async function handleDeleteConfirm() {
         <h3 class="mt-3 line-clamp-2 font-semibold leading-snug group-hover:text-primary">{{ a.title }}</h3>
         <p class="mt-1.5 line-clamp-2 flex-1 text-sm text-muted-foreground">{{ excerpt(a.content) }}</p>
         <div class="mt-3 flex items-center justify-between gap-2">
-          <div v-if="a.tags.length > 0" class="flex min-w-0 flex-wrap gap-1">
-            <Badge v-for="tag in a.tags.slice(0, 3)" :key="tag" variant="secondary" class="text-xs font-normal">
-              {{ tag }}
+          <div class="flex min-w-0 flex-wrap items-center gap-1">
+            <Badge v-if="a.directory_id" variant="secondary" class="max-w-[11rem] gap-1 text-xs font-normal">
+              <FolderTree class="h-3 w-3 shrink-0" />
+              <span class="truncate">{{ directoryPath(a.directory_id, store.directories) }}</span>
             </Badge>
           </div>
-          <span v-else />
           <span class="shrink-0 text-xs text-muted-foreground tabular-nums">{{ timeLabel(a.updated_at) }}</span>
         </div>
       </button>
@@ -266,17 +408,51 @@ async function handleDeleteConfirm() {
     <ArticleViewDialog
       :open="viewingArticle !== null"
       :article="viewingArticle"
+      :categories="store.categories"
+      :directories="store.directories"
+      :presentation-active="presentationArticle !== null"
       @update:open="(v) => !v && (viewingArticle = null)"
       @edit="viewingArticle && openEdit(viewingArticle)"
       @remove="viewingArticle && (deleteTarget = viewingArticle)"
+      @present="handlePresent"
+    />
+
+    <KnowledgePresentationOverlay
+      :open="presentationArticle !== null"
+      :article="presentationArticle"
+      :categories="store.categories"
+      :directories="store.directories"
+      @exit="handleExitPresentation"
     />
 
     <!-- 新建/编辑弹窗 -->
     <ArticleFormDialog
       v-model:open="formOpen"
+      :categories="store.categories"
+      :directories="store.directories"
       :article="editingArticle"
       :submitting="submitting"
       @submit="handleSubmit"
+    />
+
+    <KnowledgeCategoryManager
+      v-model:open="categoryManagerOpen"
+      :categories="store.categories"
+      :article-count-by-category="articleCountByCategory"
+      :submitting="categorySubmitting"
+      @create="handleCreateCategory"
+      @update="handleUpdateCategory"
+      @remove="handleRemoveCategory"
+    />
+
+    <KnowledgeDirectoryManager
+      v-model:open="directoryManagerOpen"
+      :directories="store.directories"
+      :article-count-by-directory="articleCountByDirectory"
+      :submitting="directorySubmitting"
+      @create="handleCreateDirectory"
+      @update="handleUpdateDirectory"
+      @remove="handleRemoveDirectory"
     />
 
     <!-- 删除确认弹窗 -->

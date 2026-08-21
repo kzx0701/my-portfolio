@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { ArrowRight, BookOpen, Plus } from '@lucide/vue'
+import { ArrowRight, BookOpen, FolderTree, Plus } from '@lucide/vue'
 import { Badge, Button, Card, Skeleton } from '@/components/ui'
 import { useKnowledgeStore } from '@/modules/knowledge/store'
 import { ArticleFormDialog, KnowledgeStatsCards } from '@/modules/knowledge/components'
-import { categoryMeta, type KnowledgeArticleInput } from '@/modules/knowledge/types'
+import { categoryMeta, directoryPath, type KnowledgeArticleInput } from '@/modules/knowledge/types'
 import { toast } from '@/lib/toast'
 
 const store = useKnowledgeStore()
@@ -104,12 +104,6 @@ async function handleCreate(input: KnowledgeArticleInput) {
             <Plus class="h-4 w-4" />
             写第一篇笔记
           </Button>
-          <RouterLink to="/knowledge/secrets">
-            <Button variant="outline">
-              <KeyRound class="h-4 w-4" />
-              管理密钥
-            </Button>
-          </RouterLink>
         </div>
       </Card>
 
@@ -138,10 +132,14 @@ async function handleCreate(input: KnowledgeArticleInput) {
                 :key="a.id"
                 class="flex items-center gap-3 py-2.5 text-sm"
               >
-                <Badge variant="outline" :class="categoryMeta(a.category).badgeClass" class="shrink-0">
-                  {{ categoryMeta(a.category).label }}
+                <Badge variant="outline" :class="categoryMeta(a.category, store.categories).badgeClass" class="shrink-0">
+                  {{ categoryMeta(a.category, store.categories).label }}
                 </Badge>
                 <span class="min-w-0 flex-1 truncate font-medium">{{ a.title }}</span>
+                <span v-if="a.directory_id" class="hidden max-w-40 items-center gap-1 truncate text-xs text-muted-foreground sm:inline-flex">
+                  <FolderTree class="h-3 w-3 shrink-0" />
+                  {{ directoryPath(a.directory_id, store.directories) }}
+                </span>
                 <span class="shrink-0 text-xs text-muted-foreground tabular-nums">
                   {{ timeLabel(a.updated_at) }}
                 </span>
@@ -156,6 +154,8 @@ async function handleCreate(input: KnowledgeArticleInput) {
     <!-- 新建笔记弹窗 -->
     <ArticleFormDialog
       v-model:open="formOpen"
+      :categories="store.categories"
+      :directories="store.directories"
       :submitting="submitting"
       @submit="handleCreate"
     />

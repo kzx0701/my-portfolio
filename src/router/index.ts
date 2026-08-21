@@ -65,7 +65,7 @@ const routes: RouteRecordRaw[] = [
         path: 'knowledge/articles',
         name: 'knowledge-articles',
         component: () => import('@/views/knowledge/KnowledgeArticlesView.vue'),
-        meta: { title: '笔记列表' },
+        meta: { title: '知识文件' },
       },
       {
         path: 'ai',
