@@ -419,6 +419,7 @@ export type Database = {
           parent_id: string | null
           slug: string
           name: string
+          color: string
           sort_order: number
           created_at: string
           updated_at: string
@@ -429,6 +430,7 @@ export type Database = {
           parent_id?: string | null
           slug: string
           name: string
+          color?: string
           sort_order?: number
           created_at?: string
           updated_at?: string
@@ -439,6 +441,7 @@ export type Database = {
           parent_id?: string | null
           slug?: string
           name?: string
+          color?: string
           sort_order?: number
           created_at?: string
           updated_at?: string

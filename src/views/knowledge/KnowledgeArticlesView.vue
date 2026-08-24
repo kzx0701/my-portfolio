@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { BookOpen, FileText, FolderTree, Pin, PinOff, Plus, RotateCw, Search, Settings2 } from '@lucide/vue'
 import { Badge, Button, Input, Select, Skeleton } from '@/components/ui'
 import { useKnowledgeStore } from '@/modules/knowledge/store'
@@ -23,6 +24,8 @@ import {
 import { toast } from '@/lib/toast'
 
 const store = useKnowledgeStore()
+const route = useRoute()
+const router = useRouter()
 
 /** 关键词搜索（匹配标题 / 正文） */
 const searchText = ref('')
@@ -48,6 +51,32 @@ const directorySubmitting = ref(false)
 onMounted(() => {
   store.fetchArticles()
 })
+
+/** 侧边栏目录点击后同步筛选；文件点击后直接打开阅读弹窗。 */
+watch(
+  [() => route.query.directory, () => store.directories],
+  ([directoryId, directories]) => {
+    if (typeof directoryId === 'string' && directories.some((directory) => directory.id === directoryId)) {
+      directoryFilter.value = directoryId
+    } else if (!directoryId) {
+      directoryFilter.value = 'all'
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  [() => route.query.article, () => store.articles],
+  ([articleId, articles]) => {
+    if (typeof articleId !== 'string') {
+      viewingArticle.value = null
+      return
+    }
+    const article = articles.find((item) => item.id === articleId)
+    if (article) viewingArticle.value = article
+  },
+  { immediate: true },
+)
 
 /** 分类筛选选项（全部 + 已配置分类） */
 const categoryOptions = computed(() => {
@@ -125,6 +154,7 @@ function openCreate() {
 }
 
 function openEdit(article: KnowledgeArticle) {
+  clearArticleQuery()
   viewingArticle.value = null
   editingArticle.value = article
   formOpen.value = true
@@ -132,6 +162,19 @@ function openEdit(article: KnowledgeArticle) {
 
 function openView(article: KnowledgeArticle) {
   viewingArticle.value = article
+}
+
+function clearArticleQuery() {
+  if (!route.query.article) return
+  const query = { ...route.query }
+  delete query.article
+  router.replace({ query })
+}
+
+function handleViewDialogOpenChange(open: boolean) {
+  if (open) return
+  viewingArticle.value = null
+  clearArticleQuery()
 }
 
 function handlePresent(article: KnowledgeArticle) {
@@ -411,7 +454,7 @@ async function handleDeleteConfirm() {
       :categories="store.categories"
       :directories="store.directories"
       :presentation-active="presentationArticle !== null"
-      @update:open="(v) => !v && (viewingArticle = null)"
+      @update:open="handleViewDialogOpenChange"
       @edit="viewingArticle && openEdit(viewingArticle)"
       @remove="viewingArticle && (deleteTarget = viewingArticle)"
       @present="handlePresent"

@@ -13,7 +13,7 @@ export type KnowledgeDirectory = Database['public']['Tables']['knowledge_directo
 export type KnowledgeCategoryInput = Pick<KnowledgeCategory, 'name' | 'color'>
 
 /** 新建目录的入参；空值表示根目录，目录最多支持两级。 */
-export type KnowledgeDirectoryInput = Pick<KnowledgeDirectory, 'name'> & {
+export type KnowledgeDirectoryInput = Pick<KnowledgeDirectory, 'name' | 'color'> & {
   parent_id?: string | null
 }
 
@@ -53,12 +53,26 @@ const CATEGORY_DOT_CLASSES: Record<string, string> = {
   violet: 'bg-violet-500',
 }
 
+const DIRECTORY_ICON_CLASSES: Record<string, string> = {
+  sky: 'fill-sky-500/15 text-sky-600 dark:text-sky-400',
+  emerald: 'fill-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+  indigo: 'fill-indigo-500/15 text-indigo-600 dark:text-indigo-400',
+  amber: 'fill-amber-500/15 text-amber-600 dark:text-amber-400',
+  rose: 'fill-rose-500/15 text-rose-600 dark:text-rose-400',
+  violet: 'fill-violet-500/15 text-violet-600 dark:text-violet-400',
+}
+
 export function categoryBadgeClass(color: string | null | undefined): string {
   return CATEGORY_BADGE_CLASSES[color ?? ''] ?? 'border-border bg-muted text-muted-foreground'
 }
 
 export function categoryDotClass(color: string | null | undefined): string {
   return CATEGORY_DOT_CLASSES[color ?? ''] ?? 'bg-muted-foreground'
+}
+
+/** 文件夹图标颜色；旧数据没有颜色时使用中性色。 */
+export function directoryIconClass(color: string | null | undefined): string {
+  return DIRECTORY_ICON_CLASSES[color ?? ''] ?? 'fill-muted/60 text-muted-foreground'
 }
 
 /** 分类标签文案与徽章样式；分类不存在时返回「未分类」。 */

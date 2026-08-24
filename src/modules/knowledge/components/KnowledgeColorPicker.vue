@@ -7,8 +7,9 @@ const props = withDefaults(
   defineProps<{
     modelValue?: string | null
     compact?: boolean
+    ariaLabel?: string
   }>(),
-  { modelValue: null, compact: false },
+  { modelValue: null, compact: false, ariaLabel: '标记颜色' },
 )
 
 const emit = defineEmits<{
@@ -22,13 +23,13 @@ const selectedLabel = computed(
 
 <template>
   <div class="flex min-h-9 items-center gap-2">
-    <div class="flex items-center gap-2" role="radiogroup" aria-label="标记颜色">
+    <div class="flex items-center gap-2" role="radiogroup" :aria-label="ariaLabel">
       <button
         v-for="option in CATEGORY_COLOR_OPTIONS"
         :key="option.value"
         type="button"
         class="group flex h-7 w-7 items-center justify-center rounded-full outline-none transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        :aria-label="`标记颜色：${option.label}`"
+        :aria-label="`${ariaLabel}：${option.label}`"
         :aria-checked="modelValue === option.value"
         role="radio"
         @click="emit('update:modelValue', option.value)"

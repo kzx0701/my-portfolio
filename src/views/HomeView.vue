@@ -46,36 +46,29 @@ const greeting = computed(() => {
         </h2>
       </div>
 
-      <!-- 模块入口卡片（w-full 保证在居中容器下撑满宽度，卡片列居中分布） -->
-      <div class="grid w-full gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <!-- 模块入口卡片：轻透水色表面，与首页天空 / 海面背景自然融合 -->
+      <div class="grid w-full gap-5 sm:grid-cols-2">
         <RouterLink
           v-for="mod in activeModules"
           :key="mod.key"
           :to="mod.path"
-          class="group block h-full"
+          class="group block h-full rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
         >
           <Card
-            class="relative h-full overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg"
+            class="relative h-full overflow-hidden border-0 bg-gradient-to-br from-white/90 via-white/78 to-sky-50/72 shadow-[0_1px_2px_rgba(15,23,42,0.06),0_12px_30px_-20px_rgba(14,116,144,0.34)] ring-1 ring-inset ring-sky-950/[0.09] backdrop-blur-[2px] transition-shadow duration-200 group-hover:shadow-[0_1px_2px_rgba(15,23,42,0.07),0_14px_34px_-20px_rgba(14,116,144,0.42)] dark:from-card/95 dark:via-card/90 dark:to-teal-950/70 dark:ring-white/12"
           >
-            <!-- 悬停底色：淡品牌渐变（DOM 靠前，后续内容天然绘制在其上） -->
             <div
-              class="pointer-events-none absolute inset-0 bg-gradient-to-br from-sky-400/[0.06] to-teal-500/[0.08] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+              class="pointer-events-none absolute inset-0 bg-gradient-to-br from-sky-400/[0.07] via-transparent to-teal-500/[0.09] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
             />
-            <!-- 顶部渐变线（悬停显现） -->
-            <div
-              class="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-sky-400 to-teal-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-            />
-            <!-- 角落水印图标（悬停：放大/旋转回旋/滑入/提亮/染品牌色，弹性缓动） -->
             <component
               :is="mod.icon"
               class="pointer-events-none absolute -right-4 -top-4 h-24 w-24 origin-top-right rotate-12 text-foreground opacity-[0.04] transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:translate-x-1.5 group-hover:translate-y-1.5 group-hover:rotate-[-6deg] group-hover:scale-125 group-hover:opacity-[0.16] group-hover:text-sky-500/40"
             />
 
-            <CardHeader class="p-6">
-              <!-- 横排：左侧渐变小 logo + 右侧标题/描述 -->
+            <CardHeader class="relative z-10 p-6 pb-5">
               <div class="flex items-start gap-4">
                 <div
-                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-sky-400 to-teal-500 text-white shadow-md shadow-sky-500/25 transition-transform duration-300 group-hover:scale-105"
+                  class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400/90 to-teal-500/90 text-white shadow-sm shadow-sky-500/15"
                   :style="{ viewTransitionName: `vt-${mod.key}` }"
                 >
                   <component :is="mod.icon" class="h-5 w-5" />
@@ -88,15 +81,12 @@ const greeting = computed(() => {
                 </div>
               </div>
             </CardHeader>
-            <CardFooter class="justify-end px-6 pb-6">
-              <!-- 简约入口：低调灰色，悬停卡片时点亮品牌色 + 箭头右移 -->
+            <CardFooter class="relative z-10 justify-end px-6 pb-6">
               <span
-                class="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors duration-300 group-hover:text-primary"
+                class="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors duration-200 group-hover:text-sky-700 dark:group-hover:text-sky-300"
               >
                 进入模块
-                <ArrowRight
-                  class="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5"
-                />
+                <ArrowRight class="h-3.5 w-3.5" />
               </span>
             </CardFooter>
           </Card>

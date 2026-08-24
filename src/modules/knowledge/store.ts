@@ -212,6 +212,7 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
         parent_id: parentId,
         slug: createSlug(name, directories.value.map((directory) => directory.slug), 'directory'),
         name,
+        color: input.color,
         sort_order: maxSortOrder + 10,
       })
       .select()
@@ -233,7 +234,7 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
     }
     const { data, error: err } = await supabase
       .from('knowledge_directories')
-      .update({ name })
+      .update({ name, color: input.color })
       .eq('id', id)
       .select()
       .single()

@@ -430,11 +430,16 @@ create table if not exists public.knowledge_directories (
   parent_id uuid references public.knowledge_directories (id) on delete restrict,
   slug text not null,
   name text not null,
+  color text not null default 'sky',
   sort_order integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint knowledge_directories_user_slug_key unique (user_id, slug)
 );
+
+-- 兼容已存在的知识库：为历史目录补充默认颜色。
+alter table public.knowledge_directories
+  add column if not exists color text not null default 'sky';
 
 -- ---------- 25. 创建 knowledge_articles 表（笔记：开发心得 / 知识沉淀） ----------
 -- category：保存 knowledge_categories.slug；不加 check，便于用户自定义分类
