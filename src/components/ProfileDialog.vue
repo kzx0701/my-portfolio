@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { Camera, Loader2, Trash2 } from '@lucide/vue'
 import { Avatar, Button, Dialog, Input, Label } from '@/components/ui'
 import { useAuthStore } from '@/stores/auth'
@@ -16,6 +16,7 @@ const avatarUrl = ref('')
 const saving = ref(false)
 const fileInput = ref<HTMLInputElement>()
 let pendingFile: File | null = null
+let previewObjectUrl: string | null = null
 
 const userEmail = auth.user?.email ?? ''
 
@@ -26,6 +27,7 @@ watch(
   () => props.open,
   (open) => {
     if (open) {
+      releasePreviewUrl()
       form.username = auth.username
       avatarUrl.value = auth.avatarUrl
       pendingFile = null
@@ -49,14 +51,40 @@ function onFileChange(e: Event) {
     return
   }
   pendingFile = file
-  avatarUrl.value = URL.createObjectURL(file)
+  releasePreviewUrl()
+  previewObjectUrl = URL.createObjectURL(file)
+  avatarUrl.value = previewObjectUrl
 }
 
 function removeAvatar() {
+  releasePreviewUrl()
   pendingFile = null
   avatarUrl.value = ''
   if (fileInput.value) fileInput.value.value = ''
 }
+
+function releasePreviewUrl() {
+  if (!previewObjectUrl) return
+  URL.revokeObjectURL(previewObjectUrl)
+  previewObjectUrl = null
+}
+
+function storagePathFromPublicUrl(url: string): string | null {
+  const marker = '/storage/v1/object/public/avatars/'
+  const markerIndex = url.indexOf(marker)
+  if (markerIndex === -1) return null
+  const path = decodeURIComponent(url.slice(markerIndex + marker.length))
+  return path.startsWith(`${auth.user?.id}/`) ? path : null
+}
+
+async function removeStoredAvatar(url: string) {
+  const path = storagePathFromPublicUrl(url)
+  if (!path) return
+  const { error } = await supabase.storage.from('avatars').remove([path])
+  if (error) console.warn('清理旧头像失败', error)
+}
+
+onBeforeUnmount(releasePreviewUrl)
 
 /** 上传头像到 Storage avatars bucket，返回公开 URL */
 async function uploadAvatar(file: File): Promise<string> {
@@ -79,6 +107,7 @@ async function handleSave() {
   }
   saving.value = true
   try {
+    const previousAvatar = auth.avatarUrl
     let finalAvatar = avatarUrl.value
     if (pendingFile) {
       finalAvatar = await uploadAvatar(pendingFile)
@@ -87,6 +116,8 @@ async function handleSave() {
       username: form.username,
       avatarUrl: finalAvatar || null,
     })
+    if (previousAvatar && previousAvatar !== finalAvatar) await removeStoredAvatar(previousAvatar)
+    releasePreviewUrl()
     toast('资料已更新', 'success')
     emit('update:open', false)
   } catch (e: any) {

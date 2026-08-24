@@ -7,7 +7,7 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const session = ref<Session | null>(null)
   const loading = ref(true)
-  const initialized = ref(false)
+  let initializationPromise: Promise<void> | null = null
 
   const isAuthenticated = computed(() => !!user.value)
 
@@ -69,17 +69,21 @@ export const useAuthStore = defineStore('auth', () => {
     session.value = null
   }
 
-  // 初始化：获取当前会话并订阅 auth 状态变化
-  function init() {
-    if (initialized.value) return
-    initialized.value = true
-
-    fetchSession()
-
+  // 初始化：用同一个 Promise 串行恢复会话，避免路由守卫在 Session 尚未完成时误判未登录。
+  function init(): Promise<void> {
+    if (initializationPromise) return initializationPromise
     supabase.auth.onAuthStateChange((_event, newSession) => {
       session.value = newSession
       user.value = newSession?.user ?? null
     })
+
+    initializationPromise = fetchSession().catch((error) => {
+      console.error('恢复登录状态失败', error)
+      session.value = null
+      user.value = null
+    })
+
+    return initializationPromise
   }
 
   return {
@@ -87,7 +91,6 @@ export const useAuthStore = defineStore('auth', () => {
     session,
     loading,
     isAuthenticated,
-    initialized,
     username,
     avatarUrl,
     fetchSession,

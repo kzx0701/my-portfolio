@@ -208,8 +208,8 @@ async function handleDeleteConfirm() {
         添加第一条记录
       </Button>
     </div>
-    <div v-else class="animate-in overflow-hidden rounded-lg border bg-card fade-in slide-in-from-bottom-2 [animation-duration:400ms]">
-      <Table class="table-fixed">
+    <div v-else class="animate-in overflow-x-auto rounded-lg border bg-card fade-in slide-in-from-bottom-2 [animation-duration:400ms]">
+      <Table class="min-w-[880px] table-fixed">
         <colgroup>
           <col width="13%">
           <col width="13%">

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
-import { computed, ref } from "vue";
-import { ArrowLeft, ChevronDown, ChevronRight, LogOut, UserRound } from "@lucide/vue";
+import { computed, onMounted, ref, watch } from "vue";
+import { ArrowLeft, ChevronDown, ChevronRight, LogOut, Menu, Moon, Sun, UserRound } from "@lucide/vue";
 import {
   Avatar,
+  Dialog,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -13,8 +14,8 @@ import {
 } from "@/components/ui";
 import ProfileDialog from "@/components/ProfileDialog.vue";
 import { AiChatButton, AiChatDialog } from "@/components/ai-chat";
+import ModuleNavigation from "@/components/ModuleNavigation.vue";
 import { activeModules } from "@/modules/registry";
-import KnowledgeSidebarTree from "@/modules/knowledge/components/KnowledgeSidebarTree.vue";
 import { useAuthStore } from "@/stores/auth";
 import logoUrl from "@/assets/images/logo.png";
 
@@ -23,6 +24,26 @@ const router = useRouter();
 const auth = useAuthStore();
 
 const profileOpen = ref(false);
+const mobileMenuOpen = ref(false);
+const darkMode = ref(false);
+
+onMounted(() => {
+  const savedTheme = localStorage.getItem("theme");
+  darkMode.value = savedTheme
+    ? savedTheme === "dark"
+    : window.matchMedia("(prefers-color-scheme: dark)").matches;
+  document.documentElement.classList.toggle("dark", darkMode.value);
+});
+
+function toggleTheme() {
+  darkMode.value = !darkMode.value;
+  document.documentElement.classList.toggle("dark", darkMode.value);
+  localStorage.setItem("theme", darkMode.value ? "dark" : "light");
+}
+
+watch(() => route.fullPath, () => {
+  mobileMenuOpen.value = false;
+});
 
 /** 浏览器是否支持 View Transitions API（支持时由它负责页面过渡，避免与 Vue Transition 双重动画） */
 const supportsViewTransition =
@@ -103,6 +124,15 @@ async function handleLogout() {
     <!-- 顶栏（全宽） -->
     <header class="flex h-14 shrink-0 items-center justify-between border-b px-4 sm:px-6">
       <div class="flex min-w-0 items-center gap-3">
+        <button
+          v-if="!isHome && currentModule"
+          type="button"
+          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground md:hidden"
+          aria-label="打开模块菜单"
+          @click="mobileMenuOpen = true"
+        >
+          <Menu class="h-5 w-5" />
+        </button>
         <RouterLink
           to="/"
           class="shrink-0 transition-opacity hover:opacity-80"
@@ -148,6 +178,14 @@ async function handleLogout() {
               <UserRound class="h-4 w-4" />
               编辑资料
             </DropdownMenuItem>
+            <DropdownMenuItem
+              class="flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground"
+              @select="toggleTheme"
+            >
+              <Sun v-if="darkMode" class="h-4 w-4" />
+              <Moon v-else class="h-4 w-4" />
+              {{ darkMode ? "切换浅色模式" : "切换深色模式" }}
+            </DropdownMenuItem>
             <DropdownMenuSeparator class="-mx-1 my-1 h-px bg-muted" />
             <DropdownMenuItem
               class="flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive outline-none transition-colors focus:bg-destructive/10 focus:text-destructive"
@@ -169,22 +207,7 @@ async function handleLogout() {
           <span class="text-sm font-semibold">{{ currentModule.title }}</span>
         </div>
 
-        <nav class="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-3">
-          <template v-if="currentModule.children && currentModule.children.length">
-            <template v-for="item in currentModule.children" :key="item.key">
-              <RouterLink
-                v-if="item.key !== 'knowledge-articles'"
-                :to="item.path"
-                class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors"
-                :class="route.path === item.path ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
-              >
-                <component :is="item.icon" class="h-4 w-4 shrink-0" />
-                {{ item.title }}
-              </RouterLink>
-            </template>
-            <KnowledgeSidebarTree v-if="currentModule.key === 'knowledge'" />
-          </template>
-        </nav>
+        <ModuleNavigation :module="currentModule" :current-path="route.path" />
 
         <div class="border-t p-3">
           <RouterLink
@@ -198,7 +221,7 @@ async function handleLogout() {
       </aside>
 
       <!-- 主内容区：VT 支持时由 View Transitions API 过渡，否则用 Vue Transition（fade）降级 -->
-      <main class="min-w-0 flex-1 overflow-auto p-6">
+      <main class="min-w-0 flex-1 overflow-auto p-4 sm:p-6">
         <!-- 面包屑（仅模块页显示，与页面内容容器同宽对齐） -->
         <nav v-if="!isHome" class="mx-auto mb-4 flex max-w-7xl items-center gap-1.5 text-sm" aria-label="面包屑">
           <RouterLink to="/" class="text-muted-foreground transition-colors hover:text-foreground">
@@ -227,6 +250,30 @@ async function handleLogout() {
         </RouterView>
       </main>
     </div>
+
+    <Dialog
+      v-if="currentModule"
+      :open="mobileMenuOpen"
+      :title="currentModule.title"
+      hide-header
+      class="left-0 top-0 flex h-dvh max-h-none w-[min(20rem,88vw)] max-w-none translate-x-0 translate-y-0 flex-col overflow-hidden rounded-none border-y-0 border-l-0 p-0 md:hidden"
+      @update:open="mobileMenuOpen = $event"
+    >
+      <div class="flex h-14 shrink-0 items-center gap-2 border-b px-4 pr-12">
+        <component :is="currentModule.icon" class="h-5 w-5 text-muted-foreground" />
+        <span class="text-sm font-semibold">{{ currentModule.title }}</span>
+      </div>
+      <ModuleNavigation :module="currentModule" :current-path="route.path" />
+      <div class="border-t p-3">
+        <RouterLink
+          to="/"
+          class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <ArrowLeft class="h-4 w-4" />
+          返回工作台
+        </RouterLink>
+      </div>
+    </Dialog>
 
     <!-- 编辑资料弹窗 -->
     <ProfileDialog v-model:open="profileOpen" />

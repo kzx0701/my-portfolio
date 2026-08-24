@@ -51,8 +51,6 @@ export interface ModuleMeta {
   enabled?: boolean
   /** 排序权重，越小越靠前 */
   order?: number
-  /** 当前模块内路由的 basename（用于登录后跳回） */
-  active?: boolean
 }
 
 export const modules: ModuleMeta[] = [
@@ -63,7 +61,6 @@ export const modules: ModuleMeta[] = [
     path: '/orders',
     icon: ClipboardList,
     order: 1,
-    active: true,
     children: [
       { key: 'orders-dashboard', title: '仪表盘', path: '/orders', icon: LayoutDashboard },
       { key: 'orders-list', title: '订单列表', path: '/orders/list', icon: ListChecks },
@@ -76,7 +73,6 @@ export const modules: ModuleMeta[] = [
     path: '/health',
     icon: HeartPulse,
     order: 2,
-    active: true,
     children: [
       { key: 'health-dashboard', title: '仪表盘', path: '/health', icon: LayoutDashboard },
       { key: 'health-records', title: '健康记录', path: '/health/records', icon: Activity },
@@ -92,7 +88,6 @@ export const modules: ModuleMeta[] = [
     path: '/knowledge',
     icon: BookOpen,
     order: 3,
-    active: true,
     children: [
       { key: 'knowledge-dashboard', title: '仪表盘', path: '/knowledge', icon: LayoutDashboard },
       { key: 'knowledge-articles', title: '知识文件', path: '/knowledge/articles', icon: FileText },
@@ -105,7 +100,6 @@ export const modules: ModuleMeta[] = [
     path: '/ai',
     icon: Sparkles,
     order: 4,
-    active: true,
     children: [
       { key: 'ai-dashboard', title: '仪表盘', path: '/ai', icon: LayoutDashboard },
       { key: 'ai-usage', title: '消费记录', path: '/ai/usage', icon: Receipt },

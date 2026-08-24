@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
 import type {
@@ -12,6 +12,7 @@ import type {
 } from './types'
 
 export const useKnowledgeStore = defineStore('knowledge', () => {
+  const authStore = useAuthStore()
   const articles = ref<KnowledgeArticle[]>([])
   /** 分类是扁平标签，不承担目录层级。 */
   const categories = ref<KnowledgeCategory[]>([])
@@ -26,6 +27,28 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
   let articlesLoadedUserId: string | undefined
   let categoriesLoadedUserId: string | undefined
   let directoriesLoadedUserId: string | undefined
+
+  function reset() {
+    articles.value = []
+    categories.value = []
+    directories.value = []
+    loading.value = false
+    categoriesLoading.value = false
+    directoriesLoading.value = false
+    error.value = null
+    categoryError.value = null
+    directoryError.value = null
+    articlesLoadedUserId = undefined
+    categoriesLoadedUserId = undefined
+    directoriesLoadedUserId = undefined
+  }
+
+  watch(
+    () => authStore.user?.id,
+    (userId, previousUserId) => {
+      if (userId !== previousUserId) reset()
+    },
+  )
 
   function sortArticles(list: KnowledgeArticle[]): KnowledgeArticle[] {
     return [...list].sort((a, b) => {
@@ -46,7 +69,7 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
     const auth = useAuthStore()
     if (!auth.user) return false
     if (!force && categoriesLoadedUserId === auth.user.id) return true
-    categoriesLoadedUserId = auth.user.id
+    const userId = auth.user.id
     categoriesLoading.value = true
     categoryError.value = null
     try {
@@ -58,7 +81,9 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: true })
       if (err) throw err
+      if (auth.user?.id !== userId) return false
       categories.value = sortCategories((data ?? []) as KnowledgeCategory[])
+      categoriesLoadedUserId = userId
       return true
     } catch (e: any) {
       categoryError.value = e?.message ?? '加载分类失败'
@@ -74,7 +99,7 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
     const auth = useAuthStore()
     if (!auth.user) return false
     if (!force && directoriesLoadedUserId === auth.user.id) return true
-    directoriesLoadedUserId = auth.user.id
+    const userId = auth.user.id
     directoriesLoading.value = true
     directoryError.value = null
     try {
@@ -85,7 +110,9 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: true })
       if (err) throw err
+      if (auth.user?.id !== userId) return false
       directories.value = sortDirectories((data ?? []) as KnowledgeDirectory[])
+      directoriesLoadedUserId = userId
       return true
     } catch (e: any) {
       directoryError.value = e?.message ?? '加载目录失败'
@@ -101,8 +128,8 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
     const auth = useAuthStore()
     if (!auth.user) return false
     await Promise.all([fetchCategories(force), fetchDirectories(force)])
-    if (!force && articles.value.length > 0 && articlesLoadedUserId === auth.user.id) return true
-    articlesLoadedUserId = auth.user.id
+    if (!force && articlesLoadedUserId === auth.user.id) return true
+    const userId = auth.user.id
     if (articles.value.length === 0) loading.value = true
     error.value = null
     try {
@@ -112,7 +139,9 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
         .eq('user_id', auth.user.id)
         .order('updated_at', { ascending: false })
       if (err) throw err
+      if (auth.user?.id !== userId) return false
       articles.value = sortArticles((data ?? []) as KnowledgeArticle[])
+      articlesLoadedUserId = userId
       return true
     } catch (e: any) {
       error.value = e?.message ?? '加载知识库失败'
@@ -316,5 +345,6 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
     updateArticle,
     deleteArticle,
     togglePinned,
+    reset,
   }
 })

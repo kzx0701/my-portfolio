@@ -33,7 +33,7 @@ onMounted(() => {
 })
 
 function openConsole(url: string) {
-  window.open(url, '_blank')
+  window.open(url, '_blank', 'noopener,noreferrer')
 }
 
 async function handleRefresh() {

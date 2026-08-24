@@ -1061,3 +1061,166 @@ create policy "ai_chat_messages_delete_own" on public.ai_chat_messages
 -- ---------- 46. 权限 ----------
 grant select, insert, update, delete on table public.ai_chat_conversations to authenticated;
 grant select, insert, delete on table public.ai_chat_messages to authenticated;
+
+-- ============================================================
+-- 安全与性能收口（统一 RLS、函数 search_path、外键索引、密钥列权限）
+-- ============================================================
+
+alter function public.handle_updated_at() set search_path = '';
+alter function public.validate_knowledge_directory_parent() set search_path = '';
+
+create index if not exists idx_ai_chat_messages_user_id
+  on public.ai_chat_messages (user_id);
+create index if not exists idx_knowledge_articles_directory_id
+  on public.knowledge_articles (directory_id);
+create index if not exists idx_knowledge_articles_directory_fk
+  on public.knowledge_articles (directory_id);
+create index if not exists idx_knowledge_directories_parent_id
+  on public.knowledge_directories (parent_id);
+
+-- 密钥明文仅供受信任的 Edge Function 使用；浏览器只能读取元数据。
+revoke select on table public.ai_secrets from authenticated;
+grant select (id, user_id, service_id, name, service, note, created_at, updated_at)
+  on table public.ai_secrets to authenticated;
+
+-- 所有用户表统一限定 authenticated，并让 auth.uid() 走 initPlan。
+do $$
+declare
+  table_name text;
+  user_tables text[] := array[
+    'orders',
+    'payments',
+    'health_records',
+    'health_goal',
+    'health_profile',
+    'knowledge_articles',
+    'knowledge_categories',
+    'knowledge_directories',
+    'ai_services',
+    'ai_usage_records',
+    'ai_secrets',
+    'ai_chat_models',
+    'ai_chat_conversations'
+  ];
+begin
+  foreach table_name in array user_tables loop
+    execute format('drop policy if exists %I on public.%I', table_name || '_select_own', table_name);
+    execute format(
+      'create policy %I on public.%I for select to authenticated using ((select auth.uid()) = user_id)',
+      table_name || '_select_own',
+      table_name
+    );
+
+    execute format('drop policy if exists %I on public.%I', table_name || '_insert_own', table_name);
+    execute format(
+      'create policy %I on public.%I for insert to authenticated with check ((select auth.uid()) = user_id)',
+      table_name || '_insert_own',
+      table_name
+    );
+
+    execute format('drop policy if exists %I on public.%I', table_name || '_update_own', table_name);
+    execute format(
+      'create policy %I on public.%I for update to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id)',
+      table_name || '_update_own',
+      table_name
+    );
+
+    execute format('drop policy if exists %I on public.%I', table_name || '_delete_own', table_name);
+    execute format(
+      'create policy %I on public.%I for delete to authenticated using ((select auth.uid()) = user_id)',
+      table_name || '_delete_own',
+      table_name
+    );
+  end loop;
+end $$;
+
+drop policy if exists "ai_chat_messages_select_own" on public.ai_chat_messages;
+create policy "ai_chat_messages_select_own" on public.ai_chat_messages
+  for select to authenticated using ((select auth.uid()) = user_id);
+
+drop policy if exists "ai_chat_messages_insert_own" on public.ai_chat_messages;
+create policy "ai_chat_messages_insert_own" on public.ai_chat_messages
+  for insert to authenticated with check ((select auth.uid()) = user_id);
+
+drop policy if exists "ai_chat_messages_delete_own" on public.ai_chat_messages;
+create policy "ai_chat_messages_delete_own" on public.ai_chat_messages
+  for delete to authenticated using ((select auth.uid()) = user_id);
+
+-- 关联记录必须属于同一用户，避免仅校验子表 user_id 时产生跨租户外键。
+create or replace function public.validate_user_owned_relationships()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if tg_table_name = 'payments' and not exists (
+    select 1 from public.orders where id = new.order_id and user_id = new.user_id
+  ) then
+    raise exception 'payment order must belong to the same user';
+  end if;
+
+  if tg_table_name = 'ai_usage_records' and not exists (
+    select 1 from public.ai_services where id = new.service_id and user_id = new.user_id
+  ) then
+    raise exception 'usage service must belong to the same user';
+  end if;
+
+  if tg_table_name = 'ai_chat_models' then
+    if not exists (
+      select 1 from public.ai_services where id = new.service_id and user_id = new.user_id
+    ) then
+      raise exception 'chat model service must belong to the same user';
+    end if;
+    if new.secret_id is not null and not exists (
+      select 1
+      from public.ai_secrets
+      where id = new.secret_id
+        and user_id = new.user_id
+        and service_id = new.service_id
+    ) then
+      raise exception 'chat model secret must belong to the same user and service';
+    end if;
+  end if;
+
+  if tg_table_name = 'ai_chat_conversations'
+    and new.chat_model_id is not null
+    and not exists (
+      select 1 from public.ai_chat_models where id = new.chat_model_id and user_id = new.user_id
+    ) then
+    raise exception 'conversation model must belong to the same user';
+  end if;
+
+  if tg_table_name = 'ai_chat_messages' and not exists (
+    select 1 from public.ai_chat_conversations where id = new.conversation_id and user_id = new.user_id
+  ) then
+    raise exception 'message conversation must belong to the same user';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists validate_payment_owner on public.payments;
+create trigger validate_payment_owner
+  before insert or update of order_id, user_id on public.payments
+  for each row execute function public.validate_user_owned_relationships();
+
+drop trigger if exists validate_ai_usage_owner on public.ai_usage_records;
+create trigger validate_ai_usage_owner
+  before insert or update of service_id, user_id on public.ai_usage_records
+  for each row execute function public.validate_user_owned_relationships();
+
+drop trigger if exists validate_ai_chat_model_owner on public.ai_chat_models;
+create trigger validate_ai_chat_model_owner
+  before insert or update of service_id, secret_id, user_id on public.ai_chat_models
+  for each row execute function public.validate_user_owned_relationships();
+
+drop trigger if exists validate_ai_chat_conversation_owner on public.ai_chat_conversations;
+create trigger validate_ai_chat_conversation_owner
+  before insert or update of chat_model_id, user_id on public.ai_chat_conversations
+  for each row execute function public.validate_user_owned_relationships();
+
+drop trigger if exists validate_ai_chat_message_owner on public.ai_chat_messages;
+create trigger validate_ai_chat_message_owner
+  before insert or update of conversation_id, user_id on public.ai_chat_messages
+  for each row execute function public.validate_user_owned_relationships();

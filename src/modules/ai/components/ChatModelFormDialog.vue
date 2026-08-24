@@ -29,7 +29,6 @@ const AUTH_TYPE_OPTIONS = [
 
 const secretOptions = computed(() =>
   aiStore.secretsOf(props.service.id)
-    .filter((secret) => secret.key_value)
     .map((secret) => ({ value: secret.id, label: secret.name })),
 )
 

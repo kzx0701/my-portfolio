@@ -11,8 +11,10 @@ const props = withDefaults(
     modelValue?: string | null
     placeholder?: string
     class?: string
+    minYear?: number
+    maxYear?: number
   }>(),
-  { placeholder: '请选择日期' },
+  { placeholder: '请选择日期', minYear: 1950 },
 )
 
 const emit = defineEmits<{ 'update:modelValue': [value: string | null] }>()
@@ -73,11 +75,13 @@ function getPlaceholder(): CalendarDate {
   return placeholderDate.value
 }
 
-/** 年份选项：1950 ~ 当前年（覆盖出生日期等历史场景） */
+/** 年份选项：默认覆盖历史日期与未来十年的计划日期，可按场景覆盖边界。 */
 const yearOptions = computed(() => {
   const current = today(getLocalTimeZone()).year
+  const max = props.maxYear ?? current + 10
+  const min = Math.min(props.minYear, max)
   const years: number[] = []
-  for (let y = current; y >= 1950; y--) years.push(y)
+  for (let y = max; y >= min; y--) years.push(y)
   return years
 })
 

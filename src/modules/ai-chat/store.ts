@@ -1,11 +1,12 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
-import { useAiStore } from '@/modules/ai/store'
 import type { AiChatConversation, AiChatMessage, AiChatModel, AiChatModelInput } from './types'
+import { consumeOpenAiSse } from './sse'
 
 export const useAiChatStore = defineStore('ai-chat', () => {
+  const authStore = useAuthStore()
   const models = ref<AiChatModel[]>([])
   const currentModelId = ref<string | null>(null)
   const conversations = ref<AiChatConversation[]>([])
@@ -16,6 +17,29 @@ export const useAiChatStore = defineStore('ai-chat', () => {
   const error = ref<string | null>(null)
   const chatOpen = ref(false)
   let modelsLoadedUserId: string | undefined
+  let activeRequest: AbortController | null = null
+
+  function reset() {
+    activeRequest?.abort()
+    activeRequest = null
+    models.value = []
+    currentModelId.value = null
+    conversations.value = []
+    currentConversation.value = null
+    messages.value = []
+    loading.value = false
+    streaming.value = false
+    error.value = null
+    chatOpen.value = false
+    modelsLoadedUserId = undefined
+  }
+
+  watch(
+    () => authStore.user?.id,
+    (userId, previousUserId) => {
+      if (userId !== previousUserId) reset()
+    },
+  )
 
   const sortedConversations = computed(() =>
     [...conversations.value].sort((a, b) => b.updated_at.localeCompare(a.updated_at)),
@@ -32,9 +56,8 @@ export const useAiChatStore = defineStore('ai-chat', () => {
   async function fetchModels(force = false): Promise<boolean> {
     const auth = useAuthStore()
     if (!auth.user) return false
-    if (!force && models.value.length > 0 && modelsLoadedUserId === auth.user.id) return true
-
-    modelsLoadedUserId = auth.user.id
+    if (!force && modelsLoadedUserId === auth.user.id) return true
+    const userId = auth.user.id
     try {
       const { data, error: err } = await supabase
         .from('ai_chat_models')
@@ -43,7 +66,9 @@ export const useAiChatStore = defineStore('ai-chat', () => {
         .order('is_default', { ascending: false })
         .order('updated_at', { ascending: false })
       if (err) throw err
+      if (auth.user?.id !== userId) return false
       models.value = (data ?? []) as AiChatModel[]
+      modelsLoadedUserId = userId
       if (!currentModelId.value || !enabledModels.value.some((model) => model.id === currentModelId.value)) {
         currentModelId.value = defaultModel.value?.id ?? null
       }
@@ -148,6 +173,7 @@ export const useAiChatStore = defineStore('ai-chat', () => {
   async function fetchConversations(): Promise<boolean> {
     const auth = useAuthStore()
     if (!auth.user) return false
+    const userId = auth.user.id
     loading.value = true
     try {
       const { data, error: err } = await supabase
@@ -156,6 +182,7 @@ export const useAiChatStore = defineStore('ai-chat', () => {
         .eq('user_id', auth.user.id)
         .order('updated_at', { ascending: false })
       if (err) throw err
+      if (auth.user?.id !== userId) return false
       conversations.value = (data ?? []) as AiChatConversation[]
       return true
     } catch (e) {
@@ -187,6 +214,7 @@ export const useAiChatStore = defineStore('ai-chat', () => {
   }
 
   async function switchConversation(conv: AiChatConversation) {
+    cancelStreaming()
     currentConversation.value = conv
     currentModelId.value =
       enabledModels.value.find((model) => model.id === conv.chat_model_id)?.id
@@ -198,6 +226,7 @@ export const useAiChatStore = defineStore('ai-chat', () => {
   async function fetchMessages(conversationId: string): Promise<boolean> {
     const auth = useAuthStore()
     if (!auth.user) return false
+    const userId = auth.user.id
     const { data, error: err } = await supabase
       .from('ai_chat_messages')
       .select('*')
@@ -208,6 +237,7 @@ export const useAiChatStore = defineStore('ai-chat', () => {
       console.error(err)
       return false
     }
+    if (auth.user?.id !== userId) return false
     messages.value = (data ?? []) as AiChatMessage[]
     return true
   }
@@ -228,7 +258,11 @@ export const useAiChatStore = defineStore('ai-chat', () => {
   }
 
   async function updateConversationTitle(conversationId: string, title: string) {
-    await supabase.from('ai_chat_conversations').update({ title }).eq('id', conversationId)
+    const { error: err } = await supabase
+      .from('ai_chat_conversations')
+      .update({ title })
+      .eq('id', conversationId)
+    if (err) throw err
     const conv = conversations.value.find((item) => item.id === conversationId)
     if (conv) conv.title = title
   }
@@ -244,41 +278,32 @@ export const useAiChatStore = defineStore('ai-chat', () => {
     return true
   }
 
-  async function getApiKey(model: AiChatModel): Promise<string | null> {
-    const aiStore = useAiStore()
-    if (aiStore.services.length === 0) await aiStore.fetchServices()
-    if (aiStore.secrets.length === 0) await aiStore.fetchSecrets()
-    return aiStore.secrets.find(
-      (secret) => secret.id === model.secret_id && secret.service_id === model.service_id && secret.key_value,
-    )?.key_value ?? null
-  }
+  async function requestChatStream(
+    modelId: string,
+    requestMessages: Array<Pick<AiChatMessage, 'role' | 'content'>>,
+    signal: AbortSignal,
+  ): Promise<Response> {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
+    const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined
+    const { data } = await supabase.auth.getSession()
+    const accessToken = data.session?.access_token
+    if (!supabaseUrl || !publishableKey || !accessToken) throw new Error('登录状态或服务配置无效')
 
-  async function getChatEndpoint(model: AiChatModel): Promise<string> {
-    if (model.protocol !== 'openai_compatible') throw new Error('暂不支持该对话协议')
-    if (model.endpoint_url?.trim()) return model.endpoint_url.trim().replace(/\/+$/, '')
-
-    const aiStore = useAiStore()
-    if (aiStore.services.length === 0) await aiStore.fetchServices()
-    const service = aiStore.services.find((item) => item.id === model.service_id)
-    const baseUrl = service?.base_url?.trim().replace(/\/+$/, '')
-    if (!baseUrl) throw new Error('未配置 Chat API 地址')
-    if (/\/chat\/completions$/i.test(baseUrl)) return baseUrl
-    if (/\/v\d+$/i.test(baseUrl)) return `${baseUrl}/chat/completions`
-    return `${baseUrl}/v1/chat/completions`
-  }
-
-  /** 兼容旧模型配置：MiMo 官方推荐使用 api-key 请求头。 */
-  async function getAuthType(model: AiChatModel): Promise<AiChatModel['auth_type']> {
-    if (model.auth_type) return model.auth_type
-    const aiStore = useAiStore()
-    if (aiStore.services.length === 0) await aiStore.fetchServices()
-    const service = aiStore.services.find((item) => item.id === model.service_id)
-    return service?.service_type === 'xiaomi' ? 'api_key' : 'bearer'
+    return fetch(`${supabaseUrl.replace(/\/+$/, '')}/functions/v1/ai-chat-proxy`, {
+      method: 'POST',
+      headers: {
+        apikey: publishableKey,
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ modelId, messages: requestMessages }),
+      signal,
+    })
   }
 
   // 核心：同步函数，立即显示气泡，异步操作在后台执行
   function sendMessage(content: string): void {
-    if (streaming.value) return
+    if (streaming.value || !content.trim()) return
     streaming.value = true
     error.value = null
 
@@ -302,16 +327,13 @@ export const useAiChatStore = defineStore('ai-chat', () => {
       created_at: new Date().toISOString(),
     })
 
-    doSendMessage(content, userId, assistantId)
+    void doSendMessage(content, userId, assistantId)
   }
 
   async function doSendMessage(content: string, userId: string, assistantId: string): Promise<void> {
     try {
       const model = currentModel.value
       if (!model) throw new Error('请先在 AI 中心配置一个可用的对话模型')
-
-      const apiKey = await getApiKey(model)
-      if (!apiKey) throw new Error('当前对话模型未绑定有效密钥，请先在 AI 中心检查配置')
 
       let conv = currentConversation.value
       if (!conv) {
@@ -335,69 +357,55 @@ export const useAiChatStore = defineStore('ai-chat', () => {
         messages.value[assistIdx].conversation_id = conv.id
       }
 
-      saveMessage(conv.id, 'user', content).then((saved) => {
-        if (saved) {
-          const idx = messages.value.findIndex((message) => message.id === userId)
-          if (idx !== -1) messages.value[idx].id = saved.id
-        }
-      })
+      const savedUserMessage = await saveMessage(conv.id, 'user', content)
+      if (!savedUserMessage) throw new Error('保存用户消息失败')
+      const savedUserIdx = messages.value.findIndex((message) => message.id === userId)
+      if (savedUserIdx !== -1) messages.value[savedUserIdx].id = savedUserMessage.id
 
       if (messages.value.filter((message) => message.role === 'user').length === 1) {
-        updateConversationTitle(conv.id, content.slice(0, 30) + (content.length > 30 ? '...' : ''))
+        await updateConversationTitle(conv.id, content.slice(0, 30) + (content.length > 30 ? '...' : ''))
       }
 
-      const endpoint = await getChatEndpoint(model)
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if ((await getAuthType(model)) === 'api_key') {
-        headers['api-key'] = apiKey
-      } else {
-        headers.Authorization = `Bearer ${apiKey}`
+      const requestController = new AbortController()
+      activeRequest = requestController
+      const response = await requestChatStream(
+        model.id,
+        messages.value
+          .filter((message) => message.id !== assistantId)
+          .map((message) => ({ role: message.role, content: message.content })),
+        requestController.signal,
+      )
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => null) as { error?: string } | null
+        throw new Error(body?.error ?? `AI 代理请求失败: ${response.status}`)
       }
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          model: model.model_id,
-          messages: messages.value
-            .filter((message) => message.id !== assistantId)
-            .map((message) => ({ role: message.role, content: message.content })),
-          stream: true,
-        }),
-      })
-
-      if (!response.ok) throw new Error(`API 请求失败: ${response.status}`)
       const reader = response.body?.getReader()
       if (!reader) throw new Error('无法读取响应流')
 
       const decoder = new TextDecoder()
       let fullContent = ''
       let lastUpdate = 0
+      let buffer = ''
+      let streamDone = false
 
-      while (true) {
+      while (!streamDone) {
         const { done, value } = await reader.read()
         if (done) break
-        const chunk = decoder.decode(value, { stream: true })
-        for (const line of chunk.split('\n')) {
-          if (!line.trim().startsWith('data: ')) continue
-          const data = line.replace('data: ', '').trim()
-          if (data === '[DONE]') break
-          try {
-            const delta = JSON.parse(data).choices?.[0]?.delta?.content
-            if (delta) {
-              fullContent += delta
-              const now = Date.now()
-              if (now - lastUpdate > 30) {
-                const idx = messages.value.findIndex((message) => message.id === assistantId)
-                if (idx !== -1) messages.value[idx].content = fullContent
-                lastUpdate = now
-              }
-            }
-          } catch {
-            // 忽略单个非 JSON 流片段，继续读取后续内容
+        const parsed = consumeOpenAiSse(buffer, decoder.decode(value, { stream: true }))
+        buffer = parsed.buffer
+        streamDone = parsed.done
+        for (const contentPart of parsed.contents) {
+          fullContent += contentPart
+          const now = Date.now()
+          if (now - lastUpdate > 30) {
+            const idx = messages.value.findIndex((message) => message.id === assistantId)
+            if (idx !== -1) messages.value[idx].content = fullContent
+            lastUpdate = now
           }
         }
       }
+      if (streamDone) await reader.cancel().catch(() => {})
 
       const finalIdx = messages.value.findIndex((message) => message.id === assistantId)
       if (finalIdx !== -1) messages.value[finalIdx].content = fullContent
@@ -408,14 +416,22 @@ export const useAiChatStore = defineStore('ai-chat', () => {
         if (saveIdx !== -1) messages.value[saveIdx].id = saved.id
       }
     } catch (e: any) {
-      error.value = e?.message ?? 'AI 回复失败'
+      if (e?.name !== 'AbortError') error.value = e?.message ?? 'AI 回复失败'
       messages.value = messages.value.filter((message) => message.id !== assistantId)
     } finally {
+      activeRequest = null
       streaming.value = false
     }
   }
 
+  function cancelStreaming() {
+    activeRequest?.abort()
+    activeRequest = null
+    streaming.value = false
+  }
+
   function clearCurrent() {
+    cancelStreaming()
     currentConversation.value = null
     messages.value = []
     currentModelId.value = defaultModel.value?.id ?? null
@@ -447,6 +463,8 @@ export const useAiChatStore = defineStore('ai-chat', () => {
     fetchMessages,
     deleteConversation,
     sendMessage,
+    cancelStreaming,
     clearCurrent,
+    reset,
   }
 })

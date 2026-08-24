@@ -72,7 +72,12 @@ function handleSubmit() {
         </div>
         <div class="space-y-2">
           <Label for="birth-date">出生日期 *</Label>
-          <DatePicker id="birth-date" v-model="form.birth_date" placeholder="选择出生日期" />
+          <DatePicker
+            id="birth-date"
+            v-model="form.birth_date"
+            placeholder="选择出生日期"
+            :max-year="new Date().getFullYear()"
+          />
         </div>
       </div>
 

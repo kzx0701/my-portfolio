@@ -34,8 +34,8 @@ function paidClass(order: Order): string {
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-lg border">
-    <Table class="table-fixed">
+  <div class="overflow-x-auto rounded-lg border">
+    <Table class="min-w-[1050px] table-fixed">
       <TableHeader>
         <TableRow>
           <TableHead class="w-[11.11%]">项目名称</TableHead>
@@ -103,18 +103,19 @@ function paidClass(order: Order): string {
                 variant="ghost"
                 size="icon"
                 title="查看项目源码"
+                :aria-label="`查看 ${order.project_name} 项目源码`"
                 :disabled="!order.repo_url"
                 @click="openRepo(order)"
               >
                 <ExternalLink class="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" title="回款" @click="emit('payments', order)">
+              <Button variant="ghost" size="icon" title="回款" :aria-label="`管理 ${order.project_name} 回款`" @click="emit('payments', order)">
                 <Banknote class="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" title="编辑" @click="emit('edit', order)">
+              <Button variant="ghost" size="icon" title="编辑" :aria-label="`编辑 ${order.project_name}`" @click="emit('edit', order)">
                 <Pencil class="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" title="删除" @click="emit('remove', order)">
+              <Button variant="ghost" size="icon" title="删除" :aria-label="`删除 ${order.project_name}`" @click="emit('remove', order)">
                 <Trash2 class="h-4 w-4 text-destructive" />
               </Button>
             </div>

@@ -145,11 +145,8 @@ router.beforeEach(async (to, from) => {
     document.documentElement.classList.toggle('no-page-vt', sameModule)
   }
 
-  // 首次进入时确保会话已初始化
-  if (!auth.initialized) {
-    auth.init()
-    await auth.fetchSession()
-  }
+  // 每次守卫都等待同一个初始化 Promise；已完成时会立即返回。
+  await auth.init()
 
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
 

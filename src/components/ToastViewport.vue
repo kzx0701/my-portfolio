@@ -10,14 +10,14 @@ const typeClass: Record<string, string> = {
 
 <template>
   <Teleport to="body">
-    <div class="pointer-events-none fixed bottom-4 right-4 z-[100] flex w-80 flex-col gap-2">
+    <div class="pointer-events-none fixed bottom-4 right-4 z-[100] flex w-[min(20rem,calc(100vw-2rem))] flex-col gap-2" aria-live="polite">
       <TransitionGroup name="toast">
         <div
           v-for="t in toasts"
           :key="t.id"
           class="pointer-events-auto flex items-start justify-between gap-3 rounded-md px-4 py-3 text-sm shadow-lg"
           :class="typeClass[t.type]"
-          role="status"
+          :role="t.type === 'error' ? 'alert' : 'status'"
         >
           <span class="min-w-0 break-words">{{ t.message }}</span>
           <button

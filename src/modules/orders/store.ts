@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
 import type { Order, OrderInput, Payment, PaymentInput } from './types'
 
 export const useOrdersStore = defineStore('orders', () => {
+  const authStore = useAuthStore()
   const orders = ref<Order[]>([])
   /** 回款记录：orderId → Payment[] */
   const paymentsMap = ref<Record<string, Payment[]>>({})
@@ -14,6 +15,22 @@ export const useOrdersStore = defineStore('orders', () => {
   const hasLoaded = ref(false)
   /** 已加载数据的用户 id：同一用户页面切换不重复全量拉取（避免每次进入都等 5-6 秒） */
   let loadedUserId: string | undefined
+
+  function reset() {
+    orders.value = []
+    paymentsMap.value = {}
+    loading.value = false
+    error.value = null
+    hasLoaded.value = false
+    loadedUserId = undefined
+  }
+
+  watch(
+    () => authStore.user?.id,
+    (userId, previousUserId) => {
+      if (userId !== previousUserId) reset()
+    },
+  )
 
   const stats = computed(() => {
     const active = orders.value.filter(
@@ -46,6 +63,7 @@ export const useOrdersStore = defineStore('orders', () => {
         .eq('user_id', auth.user.id)
         .order('created_at', { ascending: false })
       if (err) throw err
+      if (auth.user?.id !== loadedUserId) return false
       const raw = (data ?? []) as unknown as (Order & { payments?: Payment[] | null })[]
       // 剥离嵌套 payments 字段，保证 orders.value 与 Order 类型一致
       orders.value = raw.map(({ payments: _p, ...order }) => order)
@@ -145,5 +163,6 @@ export const useOrdersStore = defineStore('orders', () => {
     paidTotalOf,
     addPayment,
     deletePayment,
+    reset,
   }
 })

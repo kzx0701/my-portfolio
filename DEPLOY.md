@@ -47,7 +47,7 @@
 | 变量名 | 值 |
 |--------|-----|
 | `VITE_SUPABASE_URL` | `https://uctfnwsprgiozsvcrjvm.supabase.co` |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_lASvhU4q87lczcUxcqKpEA_NZHQlqZl` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | 从本地 `.env` 或 Supabase Connect 面板复制 |
 
 > 不填这两个变量，线上前端无法连接 Supabase，登录和接单都会失败。
 

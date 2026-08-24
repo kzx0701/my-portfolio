@@ -55,6 +55,7 @@ watch(() => store.streaming, (streaming) => {
 
 onBeforeUnmount(() => {
   if (scrollTimer) clearInterval(scrollTimer)
+  store.cancelStreaming()
 })
 
 function scrollToBottom() {
@@ -92,6 +93,11 @@ function handleModelChange(e: Event) {
 function handleNewChat() {
   store.clearCurrent()
   nextTick(() => inputRef.value?.focus())
+}
+
+function closeChat() {
+  store.cancelStreaming()
+  store.chatOpen = false
 }
 
 function handleDeleteConv(id: string, e: Event) {
@@ -180,7 +186,7 @@ const showLoading = computed(() => {
             <PanelLeftClose v-if="showSidebar" class="h-4 w-4" />
             <PanelLeft v-else class="h-4 w-4" />
           </button>
-          <button class="ai-chat-icon-button" type="button" title="关闭" aria-label="关闭 AI 助手" @click="store.chatOpen = false">
+          <button class="ai-chat-icon-button" type="button" title="关闭" aria-label="关闭 AI 助手" @click="closeChat">
             <X class="h-4 w-4" />
           </button>
         </div>

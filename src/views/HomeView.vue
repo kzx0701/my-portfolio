@@ -25,14 +25,14 @@ const greeting = computed(() => {
 <template>
   <!-- 内容容器：居中略偏上（pb-[12vh] 上移约 6vh）；背景装饰已上移至 MainLayout 布局层 -->
   <div class="mx-auto flex min-h-[calc(100vh-6.5rem)] w-full max-w-5xl flex-col items-center justify-center pb-[12vh]">
-    <div>
+    <div class="w-full">
       <!-- 欢迎区（水平居中） -->
       <div class="mb-10 text-center">
-        <h2 class="flex items-center justify-center gap-3 text-3xl font-bold tracking-tight sm:text-4xl">
+        <h2 class="flex flex-col items-center justify-center gap-1 text-3xl font-bold tracking-tight sm:flex-row sm:gap-3 sm:text-4xl">
           <img
             :src="logoImgUrl"
             alt=""
-            class="h-20 w-auto shrink-0 object-contain drop-shadow-sm sm:h-24"
+            class="h-16 w-auto shrink-0 object-contain drop-shadow-sm sm:h-24"
             style="aspect-ratio: 3 / 2"
           />
           <span>

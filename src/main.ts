@@ -13,6 +13,6 @@ app.use(router)
 
 // 应用启动即初始化认证状态
 const auth = useAuthStore()
-auth.init()
+void auth.init()
 
 app.mount('#app')

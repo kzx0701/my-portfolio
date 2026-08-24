@@ -21,8 +21,8 @@ function handleConsoleClick(_e: Event, service: AiService) {
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-lg border">
-    <Table class="table-fixed">
+  <div class="overflow-x-auto rounded-lg border">
+    <Table class="min-w-[720px] table-fixed">
       <TableHeader>
         <TableRow>
           <TableHead class="w-[32%]">工具名称</TableHead>
@@ -36,7 +36,11 @@ function handleConsoleClick(_e: Event, service: AiService) {
           v-for="service in services"
           :key="service.id"
           class="cursor-pointer"
+          role="button"
+          tabindex="0"
           @click="emit('view', service)"
+          @keydown.enter="emit('view', service)"
+          @keydown.space.prevent="emit('view', service)"
         >
           <TableCell class="truncate font-medium" :title="service.name">{{ service.name }}</TableCell>
           <TableCell>
@@ -58,21 +62,22 @@ function handleConsoleClick(_e: Event, service: AiService) {
                 size="icon"
                 :class="service.console_url ? '' : 'opacity-40'"
                 title="打开控制台"
+                :aria-label="`打开 ${service.name} 控制台`"
                 :disabled="!service.console_url"
                 @click.stop="handleConsoleClick($event, service)"
               >
                 <Globe class="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" title="密钥管理" @click.stop="emit('view-secrets', service)">
+              <Button variant="ghost" size="icon" title="密钥管理" :aria-label="`管理 ${service.name} 密钥`" @click.stop="emit('view-secrets', service)">
                 <KeyRound class="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" title="对话模型" @click.stop="emit('manage-chat-models', service)">
+              <Button variant="ghost" size="icon" title="对话模型" :aria-label="`管理 ${service.name} 对话模型`" @click.stop="emit('manage-chat-models', service)">
                 <MessageCircle class="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" title="编辑工具" @click.stop="emit('edit', service)">
+              <Button variant="ghost" size="icon" title="编辑工具" :aria-label="`编辑 ${service.name}`" @click.stop="emit('edit', service)">
                 <Pencil class="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" title="删除工具" @click.stop="emit('remove', service)">
+              <Button variant="ghost" size="icon" title="删除工具" :aria-label="`删除 ${service.name}`" @click.stop="emit('remove', service)">
                 <Trash2 class="h-4 w-4 text-destructive" />
               </Button>
             </div>

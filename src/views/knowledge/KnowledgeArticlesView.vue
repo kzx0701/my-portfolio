@@ -408,30 +408,36 @@ async function handleDeleteConfirm() {
       </Button>
     </div>
     <div v-else class="animate-in grid gap-4 fade-in slide-in-from-bottom-2 [animation-duration:400ms] sm:grid-cols-2 lg:grid-cols-3">
-      <button
+      <article
         v-for="a in filteredArticles"
         :key="a.id"
         class="group relative flex flex-col overflow-hidden rounded-xl border bg-card p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
-        @click="openView(a)"
       >
-        <div class="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-sky-400 to-teal-500 opacity-0 transition-opacity group-hover:opacity-100" />
-        <div class="flex items-start justify-between gap-2">
+        <button
+          type="button"
+          class="absolute inset-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          :aria-label="`打开知识文件：${a.title}`"
+          @click="openView(a)"
+        />
+        <div class="pointer-events-none absolute inset-x-0 top-0 h-1 bg-linear-to-r from-sky-400 to-teal-500 opacity-0 transition-opacity group-hover:opacity-100" />
+        <div class="pointer-events-none relative z-[1] flex items-start justify-between gap-2">
           <Badge variant="outline" :class="categoryMeta(a.category, store.categories).badgeClass">
             {{ categoryMeta(a.category, store.categories).label }}
           </Badge>
-          <span
-            role="button"
-            class="shrink-0 text-muted-foreground transition-colors hover:text-amber-600"
+          <button
+            type="button"
+            class="pointer-events-auto relative z-10 shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-amber-500/10 hover:text-amber-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             :title="a.is_pinned ? '取消置顶' : '置顶'"
-            @click.stop="handleTogglePinned(a)"
+            :aria-label="a.is_pinned ? `取消置顶：${a.title}` : `置顶：${a.title}`"
+            @click="handleTogglePinned(a)"
           >
             <Pin v-if="a.is_pinned" class="h-4 w-4 fill-amber-500 text-amber-500" />
             <PinOff v-else class="h-4 w-4" />
-          </span>
+          </button>
         </div>
-        <h3 class="mt-3 line-clamp-2 font-semibold leading-snug group-hover:text-primary">{{ a.title }}</h3>
-        <p class="mt-1.5 line-clamp-2 flex-1 text-sm text-muted-foreground">{{ excerpt(a.content) }}</p>
-        <div class="mt-3 flex items-center justify-between gap-2">
+        <h3 class="pointer-events-none relative z-[1] mt-3 line-clamp-2 font-semibold leading-snug group-hover:text-primary">{{ a.title }}</h3>
+        <p class="pointer-events-none relative z-[1] mt-1.5 line-clamp-2 flex-1 text-sm text-muted-foreground">{{ excerpt(a.content) }}</p>
+        <div class="pointer-events-none relative z-[1] mt-3 flex items-center justify-between gap-2">
           <div class="flex min-w-0 flex-wrap items-center gap-1">
             <Badge v-if="a.directory_id" variant="secondary" class="max-w-[11rem] gap-1 text-xs font-normal">
               <FolderTree class="h-3 w-3 shrink-0" />
@@ -440,7 +446,7 @@ async function handleDeleteConfirm() {
           </div>
           <span class="shrink-0 text-xs text-muted-foreground tabular-nums">{{ timeLabel(a.updated_at) }}</span>
         </div>
-      </button>
+      </article>
     </div>
 
     <p v-if="!isEmpty && filteredArticles.length === 0" class="py-10 text-center text-sm text-muted-foreground">

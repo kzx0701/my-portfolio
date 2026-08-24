@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
 import type {
@@ -12,6 +12,7 @@ import type {
 } from './types'
 
 export const useAiStore = defineStore('ai', () => {
+  const authStore = useAuthStore()
   /** AI 工具列表（按 created_at 倒序，最新在前） */
   const services = ref<AiService[]>([])
   /** 消费记录（按 usage_month 倒序，再按 created_at 倒序） */
@@ -24,6 +25,25 @@ export const useAiStore = defineStore('ai', () => {
   let servicesLoadedUserId: string | undefined
   let usageLoadedUserId: string | undefined
   let secretsLoadedUserId: string | undefined
+  const secretPublicColumns = 'id, user_id, service_id, name, service, note, created_at, updated_at'
+
+  function reset() {
+    services.value = []
+    usage.value = []
+    secrets.value = []
+    loading.value = false
+    error.value = null
+    servicesLoadedUserId = undefined
+    usageLoadedUserId = undefined
+    secretsLoadedUserId = undefined
+  }
+
+  watch(
+    () => authStore.user?.id,
+    (userId, previousUserId) => {
+      if (userId !== previousUserId) reset()
+    },
+  )
 
   /** 工具排序：按 created_at 倒序 */
   function sortServices(list: AiService[]): AiService[] {
@@ -43,8 +63,8 @@ export const useAiStore = defineStore('ai', () => {
   async function fetchServices(force = false): Promise<boolean> {
     const auth = useAuthStore()
     if (!auth.user) return false
-    if (!force && services.value.length > 0 && servicesLoadedUserId === auth.user.id) return true
-    servicesLoadedUserId = auth.user.id
+    if (!force && servicesLoadedUserId === auth.user.id) return true
+    const userId = auth.user.id
     if (services.value.length === 0) loading.value = true
     error.value = null
     try {
@@ -54,7 +74,9 @@ export const useAiStore = defineStore('ai', () => {
         .eq('user_id', auth.user.id)
         .order('created_at', { ascending: false })
       if (err) throw err
+      if (auth.user?.id !== userId) return false
       services.value = sortServices((data ?? []) as AiService[])
+      servicesLoadedUserId = userId
       return true
     } catch (e: any) {
       error.value = e?.message ?? '加载 AI 工具失败'
@@ -103,8 +125,8 @@ export const useAiStore = defineStore('ai', () => {
   async function fetchUsage(force = false): Promise<boolean> {
     const auth = useAuthStore()
     if (!auth.user) return false
-    if (!force && usage.value.length > 0 && usageLoadedUserId === auth.user.id) return true
-    usageLoadedUserId = auth.user.id
+    if (!force && usageLoadedUserId === auth.user.id) return true
+    const userId = auth.user.id
     try {
       const { data, error: err } = await supabase
         .from('ai_usage_records')
@@ -113,7 +135,9 @@ export const useAiStore = defineStore('ai', () => {
         .order('usage_date', { ascending: false })
         .order('created_at', { ascending: false })
       if (err) throw err
+      if (auth.user?.id !== userId) return false
       usage.value = (data ?? []) as AiUsageRecord[]
+      usageLoadedUserId = userId
       return true
     } catch (e: any) {
       console.error('fetchUsage error:', e)
@@ -160,16 +184,18 @@ export const useAiStore = defineStore('ai', () => {
   async function fetchSecrets(force = false): Promise<boolean> {
     const auth = useAuthStore()
     if (!auth.user) return false
-    if (!force && secrets.value.length > 0 && secretsLoadedUserId === auth.user.id) return true
-    secretsLoadedUserId = auth.user.id
+    if (!force && secretsLoadedUserId === auth.user.id) return true
+    const userId = auth.user.id
     try {
       const { data, error: err } = await supabase
         .from('ai_secrets')
-        .select('*')
+        .select(secretPublicColumns)
         .eq('user_id', auth.user.id)
         .order('updated_at', { ascending: false })
       if (err) throw err
-      secrets.value = (data ?? []) as AiSecret[]
+      if (auth.user?.id !== userId) return false
+      secrets.value = (data ?? []).map((secret) => ({ ...secret, key_value: null })) as AiSecret[]
+      secretsLoadedUserId = userId
       return true
     } catch (e: any) {
       console.error('fetchSecrets error:', e)
@@ -183,24 +209,28 @@ export const useAiStore = defineStore('ai', () => {
     const { data, error: err } = await supabase
       .from('ai_secrets')
       .insert({ ...input, user_id: auth.user.id })
-      .select()
+      .select(secretPublicColumns)
       .single()
     if (err) throw err
-    secrets.value.unshift(data)
-    return data
+    const secret = { ...data, key_value: null } as AiSecret
+    secrets.value.unshift(secret)
+    return secret
   }
 
   async function updateSecret(id: string, input: Partial<AiSecretInput>) {
+    const patch = { ...input }
+    if (!patch.key_value) delete patch.key_value
     const { data, error: err } = await supabase
       .from('ai_secrets')
-      .update(input)
+      .update(patch)
       .eq('id', id)
-      .select()
+      .select(secretPublicColumns)
       .single()
     if (err) throw err
+    const secret = { ...data, key_value: null } as AiSecret
     const idx = secrets.value.findIndex((s) => s.id === id)
-    if (idx !== -1) secrets.value[idx] = data
-    return data
+    if (idx !== -1) secrets.value[idx] = secret
+    return secret
   }
 
   async function deleteSecret(id: string) {
@@ -233,5 +263,6 @@ export const useAiStore = defineStore('ai', () => {
     updateSecret,
     deleteSecret,
     secretsOf,
+    reset,
   }
 })

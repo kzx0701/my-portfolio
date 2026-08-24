@@ -3,7 +3,7 @@ import { reactive, ref, watch } from 'vue'
 import { Eye, EyeOff } from '@lucide/vue'
 import { Button, Dialog, Input, Label, Textarea } from '@/components/ui'
 import { toast } from '@/lib/toast'
-import { maskKey, type AiSecret, type AiSecretInput } from '@/modules/ai/types'
+import { type AiSecret, type AiSecretInput } from '@/modules/ai/types'
 
 const props = defineProps<{
   open: boolean
@@ -58,7 +58,7 @@ function handleSubmit() {
     service_id: form.service_id,
     name,
     service: form.service?.trim() || null,
-    key_value: props.secret ? keyValue || props.secret.key_value : keyValue || null,
+    key_value: props.secret ? keyValue || null : keyValue || null,
     note: form.note?.trim() || null,
   })
 }
@@ -86,7 +86,7 @@ function handleSubmit() {
             :type="showKey ? 'text' : 'password'"
             autocomplete="new-password"
             class="pr-10"
-            :placeholder="secret ? `留空保持原值（当前：${maskKey(secret.key_value)}）` : '粘贴密钥内容'"
+            :placeholder="secret ? '留空保持原值' : '粘贴密钥内容'"
           />
           <button
             type="button"

@@ -67,8 +67,8 @@ function fmtBMI(bmi: number | null): string {
 <template>
   <div class="overflow-hidden rounded-lg border">
     <!-- 固定高度容器：列表在内部滚动，滚动到底自动触发 load-more，页面本身不延伸 -->
-    <div class="max-h-[80vh] overflow-y-auto" @scroll="handleScroll">
-      <Table class="table-fixed">
+    <div class="max-h-[80vh] overflow-auto" @scroll="handleScroll">
+      <Table class="min-w-[1100px] table-fixed">
         <TableHeader class="sticky top-0 z-10 bg-background">
           <TableRow>
             <TableHead class="w-[10%] whitespace-nowrap">日期</TableHead>
@@ -144,17 +144,17 @@ function fmtBMI(bmi: number | null): string {
           </TableCell>
           <TableCell>
             <div class="flex justify-center gap-1 whitespace-nowrap">
-              <Button variant="ghost" size="icon" title="编辑" @click="emit('edit', record)">
+              <Button variant="ghost" size="icon" title="编辑" :aria-label="`编辑 ${record.record_date} 健康记录`" @click="emit('edit', record)">
                 <Pencil class="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" title="删除" @click="emit('remove', record)">
+              <Button variant="ghost" size="icon" title="删除" :aria-label="`删除 ${record.record_date} 健康记录`" @click="emit('remove', record)">
                 <Trash2 class="h-4 w-4 text-destructive" />
               </Button>
             </div>
           </TableCell>
         </TableRow>
         <TableRow v-if="records.length === 0">
-          <TableCell colspan="8" class="h-24 text-center text-muted-foreground">
+          <TableCell colspan="10" class="h-24 text-center text-muted-foreground">
             暂无健康记录，点击右上角「新建记录」开始记录体重与 BMI。
           </TableCell>
         </TableRow>

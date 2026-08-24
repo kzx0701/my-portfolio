@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
 import type {
@@ -13,6 +13,7 @@ import type {
 } from './types'
 
 export const useHealthStore = defineStore('health', () => {
+  const authStore = useAuthStore()
   /** 健康记录（按 record_date 倒序） */
   const records = ref<HealthRecord[]>([])
   /** 个人健康档案（每用户一条，未建档为 null） */
@@ -27,6 +28,26 @@ export const useHealthStore = defineStore('health', () => {
   let loadedUserId: string | undefined
   /** 目标已加载的用户 id（与 records 分开跟踪） */
   let goalsLoadedUserId: string | undefined
+  let profileLoadedUserId: string | undefined
+
+  function reset() {
+    records.value = []
+    profile.value = null
+    goals.value = []
+    loading.value = false
+    error.value = null
+    hasLoaded.value = false
+    loadedUserId = undefined
+    goalsLoadedUserId = undefined
+    profileLoadedUserId = undefined
+  }
+
+  watch(
+    () => authStore.user?.id,
+    (userId, previousUserId) => {
+      if (userId !== previousUserId) reset()
+    },
+  )
 
   /** 按 record_date 倒序（最新在前）重排；ISO 日期字符串字典序即时间序 */
   function sortByDate(list: HealthRecord[]): HealthRecord[] {
@@ -37,8 +58,8 @@ export const useHealthStore = defineStore('health', () => {
   async function fetchGoals(force = false): Promise<boolean> {
     const auth = useAuthStore()
     if (!auth.user) return false
-    if (!force && goals.value.length > 0 && goalsLoadedUserId === auth.user.id) return true
-    goalsLoadedUserId = auth.user.id
+    if (!force && goalsLoadedUserId === auth.user.id) return true
+    const userId = auth.user.id
     try {
       const { data, error: err } = await supabase
         .from('health_goal')
@@ -46,7 +67,9 @@ export const useHealthStore = defineStore('health', () => {
         .eq('user_id', auth.user.id)
         .order('created_at', { ascending: false })
       if (err) throw err
+      if (auth.user?.id !== userId) return false
       goals.value = (data ?? []) as HealthGoal[]
+      goalsLoadedUserId = userId
       return true
     } catch (e: any) {
       console.error('fetchGoals error:', e)
@@ -92,7 +115,8 @@ export const useHealthStore = defineStore('health', () => {
   async function fetchProfile(force = false): Promise<boolean> {
     const auth = useAuthStore()
     if (!auth.user) return false
-    if (!force && profile.value !== null) return true
+    if (!force && profileLoadedUserId === auth.user.id) return true
+    const userId = auth.user.id
     try {
       const { data, error: err } = await supabase
         .from('health_profile')
@@ -100,7 +124,9 @@ export const useHealthStore = defineStore('health', () => {
         .eq('user_id', auth.user.id)
         .maybeSingle()
       if (err) throw err
+      if (auth.user?.id !== userId) return false
       profile.value = (data ?? null) as HealthProfile | null
+      profileLoadedUserId = userId
       return true
     } catch (e: any) {
       console.error('fetchProfile error:', e)
@@ -138,6 +164,7 @@ export const useHealthStore = defineStore('health', () => {
         .eq('user_id', auth.user.id)
         .order('record_date', { ascending: false })
       if (err) throw err
+      if (auth.user?.id !== loadedUserId) return false
       records.value = (data ?? []) as HealthRecord[]
       hasLoaded.value = true
       return true
@@ -203,5 +230,6 @@ export const useHealthStore = defineStore('health', () => {
     createRecord,
     updateRecord,
     deleteRecord,
+    reset,
   }
 })
