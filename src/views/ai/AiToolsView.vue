@@ -13,6 +13,7 @@ import {
 } from '@/modules/ai/components'
 import { type AiService, type AiServiceInput } from '@/modules/ai/types'
 import { toast } from '@/lib/toast'
+import { openExternalUrl } from '@/lib/external-url'
 
 const store = useAiStore()
 
@@ -33,7 +34,7 @@ onMounted(() => {
 })
 
 function openConsole(url: string) {
-  window.open(url, '_blank', 'noopener,noreferrer')
+  if (!openExternalUrl(url)) toast('控制台地址无效，仅支持 http / https', 'error')
 }
 
 async function handleRefresh() {

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import { supabase } from '@/lib/supabase'
+import { createRequestDeduper } from '@/lib/request-deduper'
 import { useAuthStore } from '@/stores/auth'
 import type {
   AiSecret,
@@ -26,6 +27,9 @@ export const useAiStore = defineStore('ai', () => {
   let usageLoadedUserId: string | undefined
   let secretsLoadedUserId: string | undefined
   const secretPublicColumns = 'id, user_id, service_id, name, service, note, created_at, updated_at'
+  const servicesRequest = createRequestDeduper<boolean>()
+  const usageRequest = createRequestDeduper<boolean>()
+  const secretsRequest = createRequestDeduper<boolean>()
 
   function reset() {
     services.value = []
@@ -36,6 +40,9 @@ export const useAiStore = defineStore('ai', () => {
     servicesLoadedUserId = undefined
     usageLoadedUserId = undefined
     secretsLoadedUserId = undefined
+    servicesRequest.clear()
+    usageRequest.clear()
+    secretsRequest.clear()
   }
 
   watch(
@@ -60,7 +67,7 @@ export const useAiStore = defineStore('ai', () => {
   }
 
   /** 拉取工具列表；返回是否成功（供调用方做刷新提示等） */
-  async function fetchServices(force = false): Promise<boolean> {
+  async function loadServices(force = false): Promise<boolean> {
     const auth = useAuthStore()
     if (!auth.user) return false
     if (!force && servicesLoadedUserId === auth.user.id) return true
@@ -85,6 +92,10 @@ export const useAiStore = defineStore('ai', () => {
     } finally {
       loading.value = false
     }
+  }
+
+  function fetchServices(force = false): Promise<boolean> {
+    return servicesRequest.run(() => loadServices(force), force)
   }
 
   async function createService(input: AiServiceInput) {
@@ -122,7 +133,7 @@ export const useAiStore = defineStore('ai', () => {
   }
 
   /** 拉取消费记录 */
-  async function fetchUsage(force = false): Promise<boolean> {
+  async function loadUsage(force = false): Promise<boolean> {
     const auth = useAuthStore()
     if (!auth.user) return false
     if (!force && usageLoadedUserId === auth.user.id) return true
@@ -143,6 +154,10 @@ export const useAiStore = defineStore('ai', () => {
       console.error('fetchUsage error:', e)
       return false
     }
+  }
+
+  function fetchUsage(force = false): Promise<boolean> {
+    return usageRequest.run(() => loadUsage(force), force)
   }
 
   async function createUsage(input: AiUsageRecordInput) {
@@ -181,7 +196,7 @@ export const useAiStore = defineStore('ai', () => {
   }
 
   /** 拉取密钥列表 */
-  async function fetchSecrets(force = false): Promise<boolean> {
+  async function loadSecrets(force = false): Promise<boolean> {
     const auth = useAuthStore()
     if (!auth.user) return false
     if (!force && secretsLoadedUserId === auth.user.id) return true
@@ -201,6 +216,10 @@ export const useAiStore = defineStore('ai', () => {
       console.error('fetchSecrets error:', e)
       return false
     }
+  }
+
+  function fetchSecrets(force = false): Promise<boolean> {
+    return secretsRequest.run(() => loadSecrets(force), force)
   }
 
   async function createSecret(input: AiSecretInput) {

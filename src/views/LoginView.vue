@@ -49,10 +49,10 @@ function handleTabChange(value: string | number) {
 
 <template>
   <div class="relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-background p-4">
-    <div class="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,rgba(125,211,252,0.18),rgba(255,255,255,0.3)_45%,rgba(45,212,191,0.12))]" />
+    <div class="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,rgba(125,211,252,0.18),rgba(255,255,255,0.3)_45%,rgba(45,212,191,0.12))] dark:bg-[linear-gradient(to_bottom,rgba(14,116,144,0.16),rgba(15,23,42,0.08)_45%,rgba(13,148,136,0.12))]" />
     <div class="pointer-events-none absolute -right-20 -top-24 -z-10 h-80 w-80 rounded-full bg-amber-300/18 blur-3xl" />
     <div class="pointer-events-none absolute -bottom-28 -left-20 -z-10 h-80 w-80 rounded-full bg-teal-400/16 blur-3xl" />
-    <Card class="w-full max-w-md border-white/70 bg-white/82 shadow-[0_20px_60px_-38px_rgba(14,116,144,0.5)] backdrop-blur-md">
+    <Card class="w-full max-w-md border-white/70 bg-white/82 shadow-[0_20px_60px_-38px_rgba(14,116,144,0.5)] backdrop-blur-md dark:border-white/10 dark:bg-card/90">
       <CardHeader class="space-y-1 text-center">
         <img :src="logoUrl" alt="轩屿" class="mx-auto mb-2 h-14 w-auto object-contain" />
         <CardTitle class="text-2xl font-bold">轩屿工作台</CardTitle>

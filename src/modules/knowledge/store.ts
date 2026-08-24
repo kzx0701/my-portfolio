@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import { supabase } from '@/lib/supabase'
+import { createRequestDeduper } from '@/lib/request-deduper'
 import { useAuthStore } from '@/stores/auth'
 import type {
   KnowledgeArticle,
@@ -27,6 +28,9 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
   let articlesLoadedUserId: string | undefined
   let categoriesLoadedUserId: string | undefined
   let directoriesLoadedUserId: string | undefined
+  const categoriesRequest = createRequestDeduper<boolean>()
+  const directoriesRequest = createRequestDeduper<boolean>()
+  const articlesRequest = createRequestDeduper<boolean>()
 
   function reset() {
     articles.value = []
@@ -41,6 +45,9 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
     articlesLoadedUserId = undefined
     categoriesLoadedUserId = undefined
     directoriesLoadedUserId = undefined
+    categoriesRequest.clear()
+    directoriesRequest.clear()
+    articlesRequest.clear()
   }
 
   watch(
@@ -65,7 +72,7 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
     return [...list].sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
   }
 
-  async function fetchCategories(force = false): Promise<boolean> {
+  async function loadCategories(force = false): Promise<boolean> {
     const auth = useAuthStore()
     if (!auth.user) return false
     if (!force && categoriesLoadedUserId === auth.user.id) return true
@@ -95,7 +102,11 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
     }
   }
 
-  async function fetchDirectories(force = false): Promise<boolean> {
+  function fetchCategories(force = false): Promise<boolean> {
+    return categoriesRequest.run(() => loadCategories(force), force)
+  }
+
+  async function loadDirectories(force = false): Promise<boolean> {
     const auth = useAuthStore()
     if (!auth.user) return false
     if (!force && directoriesLoadedUserId === auth.user.id) return true
@@ -124,7 +135,11 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
     }
   }
 
-  async function fetchArticles(force = false): Promise<boolean> {
+  function fetchDirectories(force = false): Promise<boolean> {
+    return directoriesRequest.run(() => loadDirectories(force), force)
+  }
+
+  async function loadArticles(force = false): Promise<boolean> {
     const auth = useAuthStore()
     if (!auth.user) return false
     await Promise.all([fetchCategories(force), fetchDirectories(force)])
@@ -150,6 +165,10 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
     } finally {
       loading.value = false
     }
+  }
+
+  function fetchArticles(force = false): Promise<boolean> {
+    return articlesRequest.run(() => loadArticles(force), force)
   }
 
   function createSlug(name: string, existingSlugs: string[], prefix: string): string {

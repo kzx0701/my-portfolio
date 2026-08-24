@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { supabase } from '@/lib/supabase'
+import { createRequestDeduper } from '@/lib/request-deduper'
 import { useAuthStore } from '@/stores/auth'
 import type { Order, OrderInput, Payment, PaymentInput } from './types'
 
@@ -15,6 +16,7 @@ export const useOrdersStore = defineStore('orders', () => {
   const hasLoaded = ref(false)
   /** 已加载数据的用户 id：同一用户页面切换不重复全量拉取（避免每次进入都等 5-6 秒） */
   let loadedUserId: string | undefined
+  const ordersRequest = createRequestDeduper<boolean>()
 
   function reset() {
     orders.value = []
@@ -23,6 +25,7 @@ export const useOrdersStore = defineStore('orders', () => {
     error.value = null
     hasLoaded.value = false
     loadedUserId = undefined
+    ordersRequest.clear()
   }
 
   watch(
@@ -47,7 +50,7 @@ export const useOrdersStore = defineStore('orders', () => {
   })
 
   /** 拉取订单与回款数据；返回是否成功（供调用方做刷新提示等） */
-  async function fetchOrders(force = false): Promise<boolean> {
+  async function loadOrders(force = false): Promise<boolean> {
     const auth = useAuthStore()
     if (!auth.user) return false
     // 同一用户已加载过 → 直接复用本地数据（切页零请求；换账号或刷新页面会重新加载；force 可强制刷新）
@@ -85,6 +88,10 @@ export const useOrdersStore = defineStore('orders', () => {
     } finally {
       loading.value = false
     }
+  }
+
+  function fetchOrders(force = false): Promise<boolean> {
+    return ordersRequest.run(() => loadOrders(force), force)
   }
 
   async function createOrder(input: OrderInput) {

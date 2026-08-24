@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import { supabase } from '@/lib/supabase'
+import { createRequestDeduper } from '@/lib/request-deduper'
 import { useAuthStore } from '@/stores/auth'
 import type {
   HealthGoal,
@@ -29,6 +30,9 @@ export const useHealthStore = defineStore('health', () => {
   /** 目标已加载的用户 id（与 records 分开跟踪） */
   let goalsLoadedUserId: string | undefined
   let profileLoadedUserId: string | undefined
+  const goalsRequest = createRequestDeduper<boolean>()
+  const profileRequest = createRequestDeduper<boolean>()
+  const recordsRequest = createRequestDeduper<boolean>()
 
   function reset() {
     records.value = []
@@ -40,6 +44,9 @@ export const useHealthStore = defineStore('health', () => {
     loadedUserId = undefined
     goalsLoadedUserId = undefined
     profileLoadedUserId = undefined
+    goalsRequest.clear()
+    profileRequest.clear()
+    recordsRequest.clear()
   }
 
   watch(
@@ -55,7 +62,7 @@ export const useHealthStore = defineStore('health', () => {
   }
 
   /** 拉取健康目标列表（按 created_at 倒序，最新在前） */
-  async function fetchGoals(force = false): Promise<boolean> {
+  async function loadGoals(force = false): Promise<boolean> {
     const auth = useAuthStore()
     if (!auth.user) return false
     if (!force && goalsLoadedUserId === auth.user.id) return true
@@ -75,6 +82,10 @@ export const useHealthStore = defineStore('health', () => {
       console.error('fetchGoals error:', e)
       return false
     }
+  }
+
+  function fetchGoals(force = false): Promise<boolean> {
+    return goalsRequest.run(() => loadGoals(force), force)
   }
 
   /** 新建健康目标（默认进行中） */
@@ -112,7 +123,7 @@ export const useHealthStore = defineStore('health', () => {
   }
 
   /** 拉取个人档案（每用户一条，未建档返回 null） */
-  async function fetchProfile(force = false): Promise<boolean> {
+  async function loadProfile(force = false): Promise<boolean> {
     const auth = useAuthStore()
     if (!auth.user) return false
     if (!force && profileLoadedUserId === auth.user.id) return true
@@ -134,6 +145,10 @@ export const useHealthStore = defineStore('health', () => {
     }
   }
 
+  function fetchProfile(force = false): Promise<boolean> {
+    return profileRequest.run(() => loadProfile(force), force)
+  }
+
   /** 保存个人档案（有则更新，无则插入，upsert 保持每用户一条） */
   async function saveProfile(input: HealthProfileInput) {
     const auth = useAuthStore()
@@ -149,7 +164,7 @@ export const useHealthStore = defineStore('health', () => {
   }
 
   /** 拉取健康记录；返回是否成功（供调用方做刷新提示等） */
-  async function fetchRecords(force = false): Promise<boolean> {
+  async function loadRecords(force = false): Promise<boolean> {
     const auth = useAuthStore()
     if (!auth.user) return false
     // 同一用户已加载过 → 直接复用本地数据（切页零请求；换账号或刷新页面会重新加载；force 可强制刷新）
@@ -175,6 +190,10 @@ export const useHealthStore = defineStore('health', () => {
     } finally {
       loading.value = false
     }
+  }
+
+  function fetchRecords(force = false): Promise<boolean> {
+    return recordsRequest.run(() => loadRecords(force), force)
   }
 
   async function createRecord(input: HealthRecordInput) {

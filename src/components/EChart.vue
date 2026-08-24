@@ -1,21 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import * as echarts from 'echarts/core'
-import { BarChart, LineChart, PieChart } from 'echarts/charts'
-import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
-import { CanvasRenderer } from 'echarts/renderers'
 import type { ECharts, EChartsCoreOption } from 'echarts/core'
-
-// 按需注册：仅打包用到的图表类型与组件，控制产物体积
-echarts.use([
-  BarChart,
-  LineChart,
-  PieChart,
-  GridComponent,
-  LegendComponent,
-  TooltipComponent,
-  CanvasRenderer,
-])
+import { loadECharts } from '@/lib/echarts-loader'
 
 const props = withDefaults(
   defineProps<{
@@ -27,9 +13,13 @@ const props = withDefaults(
 
 const el = ref<HTMLDivElement>()
 let chart: ECharts | null = null
+let resizeObserver: ResizeObserver | null = null
+let disposed = false
 
-function render() {
+async function render() {
   if (!el.value) return
+  const echarts = await loadECharts()
+  if (disposed || !el.value) return
   if (!chart) chart = echarts.init(el.value)
   chart.setOption(props.option, true)
 }
@@ -39,14 +29,19 @@ function resize() {
 }
 
 onMounted(() => {
-  render()
-  window.addEventListener('resize', resize)
+  void render()
+  if (el.value) {
+    resizeObserver = new ResizeObserver(resize)
+    resizeObserver.observe(el.value)
+  }
 })
 
-watch(() => props.option, render, { deep: true })
+watch(() => props.option, () => void render(), { deep: true })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', resize)
+  disposed = true
+  resizeObserver?.disconnect()
+  resizeObserver = null
   chart?.dispose()
   chart = null
 })

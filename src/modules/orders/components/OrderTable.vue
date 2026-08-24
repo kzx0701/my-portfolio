@@ -2,6 +2,7 @@
 import { Banknote, ExternalLink, Pencil, Trash2 } from '@lucide/vue'
 import { Badge, Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { useOrdersStore } from '@/modules/orders/store'
+import { openExternalUrl } from '@/lib/external-url'
 import { ORDER_CHANNEL_META, ORDER_STATUS_META, PROJECT_TYPE_META, type Order } from '@/modules/orders/types'
 
 defineProps<{ orders: Order[] }>()
@@ -16,7 +17,7 @@ const emit = defineEmits<{
 
 /** 打开项目源码地址（GitHub / Gitee），无地址时不触发 */
 function openRepo(order: Order) {
-  if (order.repo_url) window.open(order.repo_url, '_blank', 'noopener,noreferrer')
+  openExternalUrl(order.repo_url)
 }
 
 function formatAmount(amount: number | null): string {

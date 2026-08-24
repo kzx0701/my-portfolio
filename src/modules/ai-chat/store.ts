@@ -1,6 +1,7 @@
 import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import { supabase } from '@/lib/supabase'
+import { createRequestDeduper } from '@/lib/request-deduper'
 import { useAuthStore } from '@/stores/auth'
 import type { AiChatConversation, AiChatMessage, AiChatModel, AiChatModelInput } from './types'
 import { consumeOpenAiSse } from './sse'
@@ -18,8 +19,12 @@ export const useAiChatStore = defineStore('ai-chat', () => {
   const chatOpen = ref(false)
   let modelsLoadedUserId: string | undefined
   let activeRequest: AbortController | null = null
+  let requestGeneration = 0
+  const modelsRequest = createRequestDeduper<boolean>()
+  const conversationsRequest = createRequestDeduper<boolean>()
 
   function reset() {
+    requestGeneration += 1
     activeRequest?.abort()
     activeRequest = null
     models.value = []
@@ -32,6 +37,8 @@ export const useAiChatStore = defineStore('ai-chat', () => {
     error.value = null
     chatOpen.value = false
     modelsLoadedUserId = undefined
+    modelsRequest.clear()
+    conversationsRequest.clear()
   }
 
   watch(
@@ -53,7 +60,7 @@ export const useAiChatStore = defineStore('ai-chat', () => {
     enabledModels.value.find((model) => model.id === currentModelId.value) ?? defaultModel.value,
   )
 
-  async function fetchModels(force = false): Promise<boolean> {
+  async function loadModels(force = false): Promise<boolean> {
     const auth = useAuthStore()
     if (!auth.user) return false
     if (!force && modelsLoadedUserId === auth.user.id) return true
@@ -77,6 +84,10 @@ export const useAiChatStore = defineStore('ai-chat', () => {
       console.error('fetchChatModels error:', e)
       return false
     }
+  }
+
+  function fetchModels(force = false): Promise<boolean> {
+    return modelsRequest.run(() => loadModels(force), force)
   }
 
   function modelsOf(serviceId: string): AiChatModel[] {
@@ -170,7 +181,7 @@ export const useAiChatStore = defineStore('ai-chat', () => {
     return true
   }
 
-  async function fetchConversations(): Promise<boolean> {
+  async function loadConversations(): Promise<boolean> {
     const auth = useAuthStore()
     if (!auth.user) return false
     const userId = auth.user.id
@@ -191,6 +202,10 @@ export const useAiChatStore = defineStore('ai-chat', () => {
     } finally {
       loading.value = false
     }
+  }
+
+  function fetchConversations(force = false): Promise<boolean> {
+    return conversationsRequest.run(loadConversations, force)
   }
 
   async function createConversation(title = '新对话', modelId = currentModel.value?.id ?? null): Promise<AiChatConversation | null> {
@@ -327,10 +342,24 @@ export const useAiChatStore = defineStore('ai-chat', () => {
       created_at: new Date().toISOString(),
     })
 
-    void doSendMessage(content, userId, assistantId)
+    const generation = ++requestGeneration
+    void doSendMessage(content, userId, assistantId, generation)
   }
 
-  async function doSendMessage(content: string, userId: string, assistantId: string): Promise<void> {
+  function assertCurrentRequest(generation: number) {
+    if (generation === requestGeneration) return
+    const error = new Error('请求已取消')
+    error.name = 'AbortError'
+    throw error
+  }
+
+  async function doSendMessage(
+    content: string,
+    userId: string,
+    assistantId: string,
+    generation: number,
+  ): Promise<void> {
+    let requestController: AbortController | null = null
     try {
       const model = currentModel.value
       if (!model) throw new Error('请先在 AI 中心配置一个可用的对话模型')
@@ -347,6 +376,7 @@ export const useAiChatStore = defineStore('ai-chat', () => {
         if (err) throw err
         conv.chat_model_id = model.id
       }
+      assertCurrentRequest(generation)
 
       const userIdx = messages.value.findIndex((message) => message.id === userId)
       if (userIdx !== -1) {
@@ -359,14 +389,16 @@ export const useAiChatStore = defineStore('ai-chat', () => {
 
       const savedUserMessage = await saveMessage(conv.id, 'user', content)
       if (!savedUserMessage) throw new Error('保存用户消息失败')
+      assertCurrentRequest(generation)
       const savedUserIdx = messages.value.findIndex((message) => message.id === userId)
       if (savedUserIdx !== -1) messages.value[savedUserIdx].id = savedUserMessage.id
 
       if (messages.value.filter((message) => message.role === 'user').length === 1) {
         await updateConversationTitle(conv.id, content.slice(0, 30) + (content.length > 30 ? '...' : ''))
       }
+      assertCurrentRequest(generation)
 
-      const requestController = new AbortController()
+      requestController = new AbortController()
       activeRequest = requestController
       const response = await requestChatStream(
         model.id,
@@ -419,12 +451,16 @@ export const useAiChatStore = defineStore('ai-chat', () => {
       if (e?.name !== 'AbortError') error.value = e?.message ?? 'AI 回复失败'
       messages.value = messages.value.filter((message) => message.id !== assistantId)
     } finally {
-      activeRequest = null
-      streaming.value = false
+      // 被取消的旧请求可能晚于新请求进入 finally；只能清理自己持有的控制器。
+      if (generation === requestGeneration && (!requestController || activeRequest === requestController)) {
+        activeRequest = null
+        streaming.value = false
+      }
     }
   }
 
   function cancelStreaming() {
+    requestGeneration += 1
     activeRequest?.abort()
     activeRequest = null
     streaming.value = false

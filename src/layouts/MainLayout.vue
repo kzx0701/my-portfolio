@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { ArrowLeft, ChevronDown, ChevronRight, LogOut, Menu, Moon, Sun, UserRound } from "@lucide/vue";
 import {
   Avatar,
@@ -17,29 +17,16 @@ import { AiChatButton, AiChatDialog } from "@/components/ai-chat";
 import ModuleNavigation from "@/components/ModuleNavigation.vue";
 import { activeModules } from "@/modules/registry";
 import { useAuthStore } from "@/stores/auth";
+import { useTheme } from "@/stores/theme";
 import logoUrl from "@/assets/images/logo.png";
 
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
+const { darkMode, toggleTheme } = useTheme();
 
 const profileOpen = ref(false);
 const mobileMenuOpen = ref(false);
-const darkMode = ref(false);
-
-onMounted(() => {
-  const savedTheme = localStorage.getItem("theme");
-  darkMode.value = savedTheme
-    ? savedTheme === "dark"
-    : window.matchMedia("(prefers-color-scheme: dark)").matches;
-  document.documentElement.classList.toggle("dark", darkMode.value);
-});
-
-function toggleTheme() {
-  darkMode.value = !darkMode.value;
-  document.documentElement.classList.toggle("dark", darkMode.value);
-  localStorage.setItem("theme", darkMode.value ? "dark" : "light");
-}
 
 watch(() => route.fullPath, () => {
   mobileMenuOpen.value = false;

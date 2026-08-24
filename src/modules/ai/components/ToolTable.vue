@@ -36,13 +36,19 @@ function handleConsoleClick(_e: Event, service: AiService) {
           v-for="service in services"
           :key="service.id"
           class="cursor-pointer"
-          role="button"
-          tabindex="0"
           @click="emit('view', service)"
-          @keydown.enter="emit('view', service)"
-          @keydown.space.prevent="emit('view', service)"
         >
-          <TableCell class="truncate font-medium" :title="service.name">{{ service.name }}</TableCell>
+          <TableCell>
+            <button
+              type="button"
+              class="block w-full truncate rounded-sm text-left font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              :title="service.name"
+              :aria-label="`查看 ${service.name} 详情`"
+              @click.stop="emit('view', service)"
+            >
+              {{ service.name }}
+            </button>
+          </TableCell>
           <TableCell>
             <Badge
               variant="outline"
