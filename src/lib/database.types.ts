@@ -33,6 +33,9 @@ export type HealthGoalTypeLiteral = 'fat_loss' | 'muscle_gain' | 'maintain'
 /** 健康目标状态（health_goal.status check 约束） */
 export type HealthGoalStatusLiteral = 'in_progress' | 'completed' | 'cancelled'
 
+/** 工作日志事项状态（work_log_items.status check 约束） */
+export type WorkLogStatusLiteral = 'pending' | 'completed' | 'cancelled'
+
 /** 旧版默认分类值；knowledge_articles.category 实际允许用户自定义 slug */
 export type KnowledgeCategoryLiteral = 'frontend' | 'backend' | 'ai' | 'tools' | 'notes'
 
@@ -170,6 +173,53 @@ export type Database = {
             columns: ['order_id']
             isOneToOne: false
             referencedRelation: 'orders'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      work_log_items: {
+        Row: {
+          id: string
+          user_id: string
+          work_date: string
+          title: string
+          description: string | null
+          status: WorkLogStatusLiteral
+          completed_at: string | null
+          cancelled_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          work_date: string
+          title: string
+          description?: string | null
+          status?: WorkLogStatusLiteral
+          completed_at?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          work_date?: string
+          title?: string
+          description?: string | null
+          status?: WorkLogStatusLiteral
+          completed_at?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'work_log_items_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
             referencedColumns: ['id']
           },
         ]

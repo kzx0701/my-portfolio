@@ -2,6 +2,8 @@ import type { Component } from 'vue'
 import {
   Activity,
   BookOpen,
+  CalendarCheck2,
+  CalendarDays,
   ClipboardList,
   FileText,
   FolderKanban,
@@ -107,12 +109,24 @@ export const modules: ModuleMeta[] = [
     ],
   },
   {
+    key: 'worklog',
+    title: '工作日志',
+    description: '用日历安排每日事项，清晰回看工作节奏与完成进展。',
+    path: '/worklog',
+    icon: CalendarCheck2,
+    order: 5,
+    children: [
+      { key: 'worklog-dashboard', title: '仪表盘', path: '/worklog', icon: LayoutDashboard },
+      { key: 'worklog-list', title: '工作日志', path: '/worklog/list', icon: CalendarDays },
+    ],
+  },
+  {
     key: 'journals',
     title: '个人日志',
     description: '记录日常与思考，沉淀知识。（预留模块）',
     path: '/journals',
     icon: FileText,
-    order: 5,
+    order: 6,
     enabled: false,
   },
   {
@@ -121,7 +135,7 @@ export const modules: ModuleMeta[] = [
     description: '展示与管理自己做过的项目。（预留模块）',
     path: '/projects',
     icon: FolderKanban,
-    order: 6,
+    order: 7,
     enabled: false,
   },
   {
@@ -130,7 +144,7 @@ export const modules: ModuleMeta[] = [
     description: '各模块数据聚合总览。（预留模块）',
     path: '/dashboard',
     icon: LayoutDashboard,
-    order: 7,
+    order: 8,
     enabled: false,
   },
 ]

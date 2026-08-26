@@ -85,6 +85,18 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/ai/AiToolsView.vue'),
         meta: { title: '工具管理' },
       },
+      {
+        path: 'worklog',
+        name: 'worklog',
+        component: () => import('@/views/worklog/WorklogDashboardView.vue'),
+        meta: { title: '仪表盘' },
+      },
+      {
+        path: 'worklog/list',
+        name: 'worklog-list',
+        component: () => import('@/views/worklog/WorklogCalendarView.vue'),
+        meta: { title: '工作日志' },
+      },
       // ---- 预留模块路由：后续确定后在 modules/registry.ts 开启并在此挂载 ----
     ],
   },
