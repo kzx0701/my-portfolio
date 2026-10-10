@@ -43,7 +43,7 @@ async function handleSelected(date: string) {
       </div>
       <div>
         <h2 class="text-lg font-semibold">工作日志</h2>
-        <p class="text-xs text-muted-foreground">在日历上看见节奏，在一天里完成事情。</p>
+        <p class="text-xs text-muted-foreground">点选左侧日期，右边记录这一天做了什么。</p>
       </div>
     </div>
 
@@ -55,7 +55,7 @@ async function handleSelected(date: string) {
     </div>
 
     <div
-      class="grid min-h-[42rem] overflow-hidden rounded-2xl border bg-card shadow-[0_18px_55px_-38px_rgba(15,23,42,0.38)] lg:h-[clamp(42rem,calc(100dvh-10rem),52rem)] lg:grid-cols-[minmax(0,1.65fr)_minmax(23rem,0.95fr)]"
+      class="grid min-h-[36rem] overflow-hidden rounded-2xl border bg-card shadow-[0_16px_50px_-40px_rgba(15,23,42,0.45)] lg:h-[clamp(36rem,calc(100dvh-12rem),40rem)] lg:grid-cols-[minmax(0,1.6fr)_minmax(22rem,0.9fr)]"
     >
       <WorklogMonthCalendar
         :model-value="selectedDate"

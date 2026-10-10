@@ -40,6 +40,12 @@ export function localDayIsoBounds(dateKey: string): { start: string; end: string
   return { start: start.toISOString(), end: end.toISOString() }
 }
 
+/** 短日期：10月9日 */
+export function formatMonthDay(dateKey: string): string {
+  const date = fromDateKey(dateKey)
+  return `${date.getMonth() + 1}月${date.getDate()}日`
+}
+
 export function formatLongDate(dateKey: string): string {
   return new Intl.DateTimeFormat('zh-CN', {
     year: 'numeric',

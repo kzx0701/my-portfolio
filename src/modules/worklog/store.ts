@@ -12,9 +12,9 @@ import type {
 } from './types'
 
 const EMPTY_STATS: WorkLogDashboardStats = {
-  currentPending: 0,
+  pendingTotal: 0,
   todayCompleted: 0,
-  overdue: 0,
+  last7Completed: 0,
   last7CompletionRate: 0,
 }
 
@@ -208,12 +208,13 @@ export const useWorklogStore = defineStore('worklog', () => {
 
     try {
       const results = await Promise.all([
+        // 全部未完成事项（不区分日期：工作日志不存在逾期，未完成就是未完成）
         supabase
           .from('work_log_items')
           .select('id', { count: 'exact', head: true })
           .eq('user_id', userId)
-          .eq('status', 'pending')
-          .lte('work_date', today),
+          .eq('status', 'pending'),
+        // 今日完成（按完成时间）
         supabase
           .from('work_log_items')
           .select('id', { count: 'exact', head: true })
@@ -221,12 +222,7 @@ export const useWorklogStore = defineStore('worklog', () => {
           .eq('status', 'completed')
           .gte('completed_at', todayBounds.start)
           .lt('completed_at', todayBounds.end),
-        supabase
-          .from('work_log_items')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', userId)
-          .eq('status', 'pending')
-          .lt('work_date', today),
+        // 近 7 日事项（用于完成数与完成率，已取消不计入分母）
         supabase
           .from('work_log_items')
           .select('status')
@@ -234,15 +230,16 @@ export const useWorklogStore = defineStore('worklog', () => {
           .gte('work_date', sevenDaysAgo)
           .lte('work_date', today)
           .neq('status', 'cancelled'),
+        // 未完成预览：按安排日期从早到晚
         supabase
           .from('work_log_items')
           .select('*')
           .eq('user_id', userId)
           .eq('status', 'pending')
-          .lte('work_date', today)
           .order('work_date', { ascending: true })
           .order('created_at', { ascending: true })
           .limit(8),
+        // 最近完成
         supabase
           .from('work_log_items')
           .select('*')
@@ -251,7 +248,7 @@ export const useWorklogStore = defineStore('worklog', () => {
           .order('completed_at', { ascending: false })
           .limit(6),
       ])
-      const [pendingCount, completedTodayCount, overdueCount, recentWeek, pendingPreview, completedPreview] =
+      const [pendingCount, completedTodayCount, recentWeek, pendingPreview, completedPreview] =
         results
 
       const firstError = results.map((result) => result.error).find(Boolean)
@@ -261,9 +258,9 @@ export const useWorklogStore = defineStore('worklog', () => {
       const weeklyItems = recentWeek.data ?? []
       const completed = weeklyItems.filter((item) => item.status === 'completed').length
       dashboardStats.value = {
-        currentPending: pendingCount.count ?? 0,
+        pendingTotal: pendingCount.count ?? 0,
         todayCompleted: completedTodayCount.count ?? 0,
-        overdue: overdueCount.count ?? 0,
+        last7Completed: completed,
         last7CompletionRate:
           weeklyItems.length === 0 ? 0 : Math.round((completed / weeklyItems.length) * 100),
       }

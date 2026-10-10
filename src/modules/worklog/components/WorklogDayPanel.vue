@@ -1,15 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import { ArrowUp, CheckCheck, ListTodo, LoaderCircle, Plus } from '@lucide/vue'
-import { Button, Input, Progress, Skeleton } from '@/components/ui'
+import { ArrowUp, BadgeCheck, ListTodo, LoaderCircle, Plus } from '@lucide/vue'
+import { Badge, Button, Input, Progress, Skeleton } from '@/components/ui'
 import { toast } from '@/lib/toast'
-import { formatLongDate, formatWeekday, fromDateKey, toDateKey } from '@/modules/worklog/date'
+import { formatMonthDay, formatWeekday, toDateKey } from '@/modules/worklog/date'
 import { useWorklogStore } from '@/modules/worklog/store'
-import type {
-  WorkLogItem,
-  WorkLogItemInput,
-  WorkLogStatus,
-} from '@/modules/worklog/types'
+import type { WorkLogItem, WorkLogItemInput, WorkLogStatus } from '@/modules/worklog/types'
 import WorklogDeleteDialog from './WorklogDeleteDialog.vue'
 import WorklogFormDialog from './WorklogFormDialog.vue'
 import WorklogTaskRow from './WorklogTaskRow.vue'
@@ -31,22 +27,25 @@ const deleting = ref(false)
 const busyIds = ref<Set<string>>(new Set())
 const celebratingIds = ref<Set<string>>(new Set())
 const celebrationTimers = new Map<string, ReturnType<typeof setTimeout>>()
+/** 同一次范围请求（切换日期）里，只有当天确实没有数据时才用骨架屏，避免闪现 */
+const showSkeleton = computed(() => props.loading && props.items.length === 0)
 
-const selectedDate = computed(() => fromDateKey(props.workDate))
-const monthDay = computed(
-  () => `${String(selectedDate.value.getMonth() + 1).padStart(2, '0')}.${String(selectedDate.value.getDate()).padStart(2, '0')}`,
-)
-const year = computed(() => selectedDate.value.getFullYear())
+const dateLabel = computed(() => formatMonthDay(props.workDate))
+const weekdayLabel = computed(() => formatWeekday(props.workDate))
 const isToday = computed(() => props.workDate === toDateKey(new Date()))
-const pendingItems = computed(() => props.items.filter((item) => item.status === 'pending'))
-const completedItems = computed(() => props.items.filter((item) => item.status === 'completed'))
-const cancelledItems = computed(() => props.items.filter((item) => item.status === 'cancelled'))
-const pendingCount = computed(() => pendingItems.value.length)
-const completedCount = computed(() => completedItems.value.length)
-const actionableCount = computed(() => pendingCount.value + completedCount.value)
+
+const completedCount = computed(() => props.items.filter((item) => item.status === 'completed').length)
+const pendingCount = computed(() => props.items.filter((item) => item.status === 'pending').length)
+/** 已取消不计入完成率分母 */
+const actionableCount = computed(() => completedCount.value + pendingCount.value)
 const completionRate = computed(() =>
-  actionableCount.value === 0 ? 0 : Math.round((completedCount.value / actionableCount.value) * 100),
+  actionableCount.value === 0
+    ? 0
+    : Math.round((completedCount.value / actionableCount.value) * 100),
 )
+
+// 列表顺序由 store.itemsForDate 保证（待办 → 已完成 → 已取消，组内按创建时间），
+// 这里不再做二次分组：待办/已完成的区分完全交给行首勾选框自身表达。
 
 watch(
   () => props.workDate,
@@ -66,6 +65,7 @@ function setBusy(id: string, busy: boolean) {
   busyIds.value = next
 }
 
+/** 完成反馈：短暂高亮整行（配合行自身的 transition-colors，无 keyframes） */
 function celebrate(id: string) {
   const next = new Set(celebratingIds.value)
   next.add(id)
@@ -90,7 +90,6 @@ async function handleQuickAdd() {
   try {
     await store.createItem({ work_date: props.workDate, title, description: null })
     quickTitle.value = ''
-    toast('事项已添加', 'success')
   } catch (caught: any) {
     toast(caught?.message ?? '添加失败', 'error')
   } finally {
@@ -122,10 +121,7 @@ async function handleStatus(item: WorkLogItem, status: WorkLogStatus) {
   setBusy(item.id, true)
   try {
     await store.changeStatus(item.id, status)
-    if (status === 'completed') {
-      celebrate(item.id)
-      toast('事项已完成', 'success')
-    }
+    if (status === 'completed') celebrate(item.id)
   } catch (caught: any) {
     toast(caught?.message ?? '更新状态失败', 'error')
   } finally {
@@ -153,72 +149,67 @@ async function handleDelete() {
 </script>
 
 <template>
-  <aside class="daily-log relative flex h-full min-h-[38rem] flex-col overflow-hidden bg-card">
-    <header class="daily-log__header relative border-b px-5 pb-5 pt-6 sm:px-6">
-      <Transition name="date-swap" mode="out-in">
+  <aside class="flex h-full min-h-[36rem] flex-col overflow-hidden bg-card">
+    <!-- 头部：日期 + 星期 + 当天进度（进度行常驻，保证切换日期时高度不跳动） -->
+    <header class="border-b px-5 pb-4 pt-5">
+      <Transition
+        mode="out-in"
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0 -translate-y-1"
+        leave-active-class="transition duration-150 ease-in"
+        leave-to-class="opacity-0 translate-y-1"
+      >
         <div :key="workDate">
-          <div class="flex items-center justify-between gap-3">
-            <p class="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
-              <span class="h-1.5 w-1.5 rounded-full bg-sky-500" />
-              Daily log / {{ year }}
-            </p>
-            <span v-if="isToday" class="rounded-full border border-sky-500/20 bg-sky-500/[0.07] px-2 py-1 text-[9px] font-bold tracking-wide text-sky-700 dark:text-sky-300">
-              TODAY
-            </span>
+          <div class="flex items-start justify-between gap-3">
+            <h3 class="flex items-baseline gap-2">
+              <span class="text-xl font-semibold tracking-tight tabular-nums">{{ dateLabel }}</span>
+              <span class="text-sm text-muted-foreground">{{ weekdayLabel }}</span>
+            </h3>
+            <Badge
+              v-if="isToday"
+              variant="outline"
+              class="shrink-0 border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300"
+            >
+              今天
+            </Badge>
           </div>
 
-          <div class="mt-3 flex items-end justify-between gap-4">
-            <div>
-              <p class="daily-log__date text-[2.85rem] font-semibold leading-none tracking-[-0.075em] text-foreground">
-                {{ monthDay }}
-              </p>
-              <p class="mt-2 text-xs text-muted-foreground">
-                <strong class="font-semibold text-foreground">{{ formatWeekday(workDate) }}</strong>
-                <span class="mx-1.5 text-border">/</span>{{ formatLongDate(workDate) }}
-              </p>
-            </div>
-
-            <div class="mb-0.5 min-w-20 text-right">
-              <p class="text-2xl font-semibold tabular-nums tracking-[-0.04em]">{{ pendingCount }}</p>
-              <p class="mt-0.5 text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground">OPEN TASKS</p>
-            </div>
+          <div class="mt-3 flex items-center gap-2.5">
+            <Progress
+              :model-value="completionRate"
+              class="h-1 flex-1 bg-muted"
+              indicator-class="bg-gradient-to-r from-sky-500 to-teal-500"
+            />
+            <span
+              v-if="actionableCount"
+              class="shrink-0 text-[11px] font-medium tabular-nums text-muted-foreground"
+            >
+              已完成 {{ completedCount }}/{{ actionableCount }}
+            </span>
+            <span v-else class="shrink-0 text-[11px] text-muted-foreground">暂无事项</span>
           </div>
         </div>
       </Transition>
-
-      <div class="mt-5">
-        <div class="mb-2 flex items-center justify-between text-[10px] font-medium text-muted-foreground">
-          <span>{{ completedCount }} 已完成 · {{ pendingCount }} 待处理</span>
-          <span class="font-bold tabular-nums text-foreground">{{ completionRate }}%</span>
-        </div>
-        <Progress
-          :model-value="completionRate"
-          class="h-1 bg-muted"
-          indicator-class="bg-sky-500"
-        />
-      </div>
     </header>
 
-    <div class="border-b px-5 py-4 sm:px-6">
+    <!-- 快速添加 -->
+    <div class="border-b px-5 py-3.5">
       <form
-        class="command-input group relative flex items-center gap-2 rounded-xl border bg-background px-2 py-2 shadow-[0_8px_30px_-24px_rgba(15,23,42,0.65)] transition-all duration-300 focus-within:-translate-y-px focus-within:border-sky-500/45 focus-within:shadow-[0_12px_32px_-22px_rgba(14,165,233,0.7)]"
-        :class="creating && 'command-input--busy'"
+        class="flex items-center gap-2 rounded-xl border bg-background px-2.5 py-1.5 transition-colors duration-200 focus-within:border-sky-500/50 focus-within:ring-2 focus-within:ring-sky-500/15"
         @submit.prevent="handleQuickAdd"
       >
-        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground transition-colors group-focus-within:bg-sky-500/10 group-focus-within:text-sky-600 dark:group-focus-within:text-sky-400">
-          <Plus class="h-3.5 w-3.5" />
-        </span>
+        <Plus class="h-4 w-4 shrink-0 text-muted-foreground" />
         <Input
           v-model="quickTitle"
           maxlength="200"
-          :placeholder="`添加 ${monthDay} 的事项`"
+          placeholder="添加事项…"
           :disabled="creating"
-          class="h-8 border-0 bg-transparent px-0 text-[13px] shadow-none focus-visible:ring-0"
+          class="h-8 flex-1 border-0 bg-transparent px-0 text-[13px] shadow-none focus-visible:ring-0"
         />
         <Button
           type="submit"
           size="icon"
-          class="h-7 w-7 rounded-lg bg-foreground text-background shadow-none transition-all duration-200 hover:scale-105 hover:bg-foreground/85 active:scale-90"
+          class="h-7 w-7 shrink-0 rounded-lg transition-transform duration-200 active:scale-90"
           :disabled="!quickTitle.trim() || creating"
           aria-label="添加事项"
         >
@@ -228,113 +219,69 @@ async function handleDelete() {
       </form>
     </div>
 
-    <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4 sm:px-6">
-      <Transition name="content-swap" mode="out-in">
-        <div v-if="loading" key="loading" class="space-y-6" aria-label="正在加载当天事项">
-          <section v-for="section in 2" :key="section">
-            <div class="mb-1 flex items-center justify-between">
-              <Skeleton class="h-3 w-16" />
-              <Skeleton class="h-3 w-6" />
-            </div>
-            <div v-for="row in section === 1 ? 3 : 2" :key="row" class="flex gap-3.5 py-3.5">
-              <div class="relative flex w-7 justify-center">
-                <Skeleton class="h-7 w-7 rounded-[0.6rem]" />
-                <span v-if="row < (section === 1 ? 3 : 2)" class="absolute bottom-[-0.9rem] top-8 w-px bg-border/70" />
-              </div>
-              <div class="flex-1 space-y-2 border-b pb-3.5">
-                <Skeleton class="h-3.5" :class="row % 2 ? 'w-3/4' : 'w-2/3'" />
-                <Skeleton class="h-2.5 w-20" />
-              </div>
-            </div>
-          </section>
+    <div class="min-h-0 flex-1 overflow-y-auto px-3.5 py-3">
+      <Transition
+        mode="out-in"
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0 translate-y-1.5"
+        leave-active-class="transition duration-150 ease-in"
+        leave-to-class="opacity-0 -translate-y-1.5"
+      >
+        <div v-if="showSkeleton" key="loading" class="space-y-2 px-1.5">
+          <Skeleton v-for="row in 5" :key="row" class="h-9 rounded-lg" />
         </div>
 
-        <div v-else-if="items.length" key="items" class="space-y-6">
-          <Transition name="section-rise">
-            <section v-if="pendingItems.length">
-              <div class="flex items-center justify-between border-b border-border/80 pb-2">
-                <h4 class="text-[10px] font-bold uppercase tracking-[0.18em] text-foreground">待处理</h4>
-                <span class="text-[10px] font-bold tabular-nums text-amber-600 dark:text-amber-400">{{ pendingItems.length }} OPEN</span>
-              </div>
-              <TransitionGroup name="task-flow" tag="ul">
-                <WorklogTaskRow
-                  v-for="item in pendingItems"
-                  :key="item.id"
-                  :item="item"
-                  :busy="busyIds.has(item.id)"
-                  @toggle="toggleStatus"
-                  @cancel="(target) => handleStatus(target, 'cancelled')"
-                  @edit="openEdit"
-                  @delete="deleteTarget = $event"
-                />
-              </TransitionGroup>
-            </section>
-          </Transition>
+        <ul v-else-if="items.length" :key="workDate" class="space-y-0.5">
+          <TransitionGroup
+            enter-active-class="transition duration-200 ease-out"
+            enter-from-class="opacity-0 -translate-y-1"
+            leave-active-class="transition duration-150 ease-in"
+            leave-to-class="opacity-0 translate-x-2"
+            move-class="transition duration-200 ease-out"
+          >
+            <WorklogTaskRow
+              v-for="item in items"
+              :key="item.id"
+              :item="item"
+              :busy="busyIds.has(item.id)"
+              :celebrating="celebratingIds.has(item.id)"
+              @toggle="toggleStatus"
+              @cancel="(target) => handleStatus(target, 'cancelled')"
+              @edit="openEdit"
+              @delete="deleteTarget = $event"
+            />
+          </TransitionGroup>
+        </ul>
 
-          <Transition name="section-rise">
-            <section v-if="completedItems.length">
-              <div class="flex items-center justify-between border-b border-border/80 pb-2">
-                <h4 class="text-[10px] font-bold uppercase tracking-[0.18em] text-foreground">已完成</h4>
-                <span class="text-[10px] font-bold tabular-nums text-emerald-600 dark:text-emerald-400">{{ completedItems.length }} DONE</span>
-              </div>
-              <TransitionGroup name="task-flow" tag="ul">
-                <WorklogTaskRow
-                  v-for="item in completedItems"
-                  :key="item.id"
-                  :item="item"
-                  :busy="busyIds.has(item.id)"
-                  :celebrating="celebratingIds.has(item.id)"
-                  @toggle="toggleStatus"
-                  @cancel="(target) => handleStatus(target, 'cancelled')"
-                  @edit="openEdit"
-                  @delete="deleteTarget = $event"
-                />
-              </TransitionGroup>
-            </section>
-          </Transition>
-
-          <Transition name="section-rise">
-            <section v-if="cancelledItems.length">
-              <div class="flex items-center justify-between border-b border-border/80 pb-2">
-                <h4 class="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">已取消</h4>
-                <span class="text-[10px] font-bold tabular-nums text-muted-foreground">{{ cancelledItems.length }} SKIPPED</span>
-              </div>
-              <TransitionGroup name="task-flow" tag="ul">
-                <WorklogTaskRow
-                  v-for="item in cancelledItems"
-                  :key="item.id"
-                  :item="item"
-                  :busy="busyIds.has(item.id)"
-                  @toggle="toggleStatus"
-                  @cancel="(target) => handleStatus(target, 'cancelled')"
-                  @edit="openEdit"
-                  @delete="deleteTarget = $event"
-                />
-              </TransitionGroup>
-            </section>
-          </Transition>
-        </div>
-
-        <div v-else key="empty" class="flex min-h-[22rem] flex-col items-center justify-center text-center">
-          <div class="empty-mark flex h-14 w-14 items-center justify-center rounded-2xl border bg-background text-muted-foreground shadow-sm">
-            <ListTodo class="h-5 w-5" />
+        <div v-else key="empty" class="flex min-h-[18rem] items-center justify-center px-2">
+          <div
+            class="flex w-full flex-col items-center gap-3 rounded-xl border border-dashed px-4 py-10 text-center"
+          >
+            <ListTodo class="h-8 w-8 text-muted-foreground/50" />
+            <div class="space-y-1">
+              <p class="text-sm font-medium">这一天还没有记录</p>
+              <p class="text-xs text-muted-foreground">把要做的事写在上面，完成后勾选它</p>
+            </div>
           </div>
-          <p class="mt-5 text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground">No tasks</p>
-          <p class="mt-2 text-sm font-semibold">这一天保持空白</p>
-          <p class="mt-1.5 max-w-52 text-xs leading-5 text-muted-foreground">需要安排时，从上方输入第一件事。</p>
         </div>
       </Transition>
-    </div>
 
-    <Transition name="footer-rise">
-      <footer v-if="items.length && !loading" class="flex items-center justify-between border-t bg-muted/25 px-5 py-3 text-[10px] font-medium text-muted-foreground sm:px-6">
-        <span class="inline-flex items-center gap-1.5">
-          <CheckCheck class="h-3.5 w-3.5" :class="pendingCount === 0 && 'text-emerald-500'" />
-          {{ pendingCount ? `仍有 ${pendingCount} 项待处理` : '当天事项已全部处理' }}
-        </span>
-        <span class="tabular-nums">{{ completedCount }}/{{ actionableCount }}</span>
-      </footer>
-    </Transition>
+      <!-- 全部处理完的轻提示，不占用独立区块 -->
+      <Transition
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0"
+        leave-active-class="transition duration-150 ease-in"
+        leave-to-class="opacity-0"
+      >
+        <p
+          v-if="items.length && !pendingCount && !showSkeleton"
+          class="mt-4 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground"
+        >
+          <BadgeCheck class="h-3.5 w-3.5 text-emerald-500" />
+          这一天的事项都完成了
+        </p>
+      </Transition>
+    </div>
   </aside>
 
   <WorklogFormDialog
@@ -352,102 +299,3 @@ async function handleDelete() {
     @confirm="handleDelete"
   />
 </template>
-
-<style scoped>
-.daily-log__header::after {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto;
-  height: 2px;
-  background: linear-gradient(90deg, rgb(14 165 233), rgb(14 165 233 / 0.15) 36%, transparent 70%);
-}
-.daily-log__date {
-  font-variant-numeric: tabular-nums;
-}
-.command-input::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  transform: translateX(-110%);
-  background: linear-gradient(90deg, transparent, rgb(125 211 252 / 0.12), transparent);
-}
-.command-input--busy::after {
-  animation: command-shimmer 1.1s ease-in-out infinite;
-}
-.date-swap-enter-active,
-.date-swap-leave-active,
-.content-swap-enter-active,
-.content-swap-leave-active,
-.section-rise-enter-active,
-.section-rise-leave-active,
-.footer-rise-enter-active,
-.footer-rise-leave-active {
-  transition:
-    opacity 230ms ease,
-    transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-.date-swap-enter-from {
-  opacity: 0;
-  transform: translateY(6px);
-}
-.date-swap-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
-}
-.content-swap-enter-from,
-.section-rise-enter-from,
-.footer-rise-enter-from {
-  opacity: 0;
-  transform: translateY(8px);
-}
-.content-swap-leave-to,
-.section-rise-leave-to,
-.footer-rise-leave-to {
-  opacity: 0;
-  transform: translateY(-5px);
-}
-.task-flow-enter-active,
-.task-flow-leave-active,
-.task-flow-move {
-  transition:
-    opacity 260ms ease,
-    transform 340ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-.task-flow-enter-from {
-  opacity: 0;
-  transform: translateY(8px) scale(0.99);
-}
-.task-flow-leave-to {
-  opacity: 0;
-  transform: translateX(12px);
-}
-.empty-mark {
-  animation: empty-mark-in 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-@keyframes command-shimmer {
-  to { transform: translateX(110%); }
-}
-@keyframes empty-mark-in {
-  from { opacity: 0; transform: scale(0.8) rotate(-5deg); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .command-input--busy::after,
-  .empty-mark {
-    animation: none;
-  }
-  .date-swap-enter-active,
-  .date-swap-leave-active,
-  .content-swap-enter-active,
-  .content-swap-leave-active,
-  .section-rise-enter-active,
-  .section-rise-leave-active,
-  .footer-rise-enter-active,
-  .footer-rise-leave-active,
-  .task-flow-enter-active,
-  .task-flow-leave-active,
-  .task-flow-move {
-    transition: none;
-  }
-}
-</style>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui'
+import { Button, Card, CardContent, CardHeader, Input, Label, Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui'
 import { useAuthStore } from '@/stores/auth'
 import logoUrl from '@/assets/images/logo.png'
 
@@ -53,10 +53,8 @@ function handleTabChange(value: string | number) {
     <div class="pointer-events-none absolute -right-20 -top-24 -z-10 h-80 w-80 rounded-full bg-amber-300/18 blur-3xl" />
     <div class="pointer-events-none absolute -bottom-28 -left-20 -z-10 h-80 w-80 rounded-full bg-teal-400/16 blur-3xl" />
     <Card class="w-full max-w-md border-white/70 bg-white/82 shadow-[0_20px_60px_-38px_rgba(14,116,144,0.5)] backdrop-blur-md dark:border-white/10 dark:bg-card/90">
-      <CardHeader class="space-y-1 text-center">
-        <img :src="logoUrl" alt="轩屿" class="mx-auto mb-2 h-14 w-auto object-contain" />
-        <CardTitle class="text-2xl font-bold">轩屿工作台</CardTitle>
-        <CardDescription>登录以进入你的个人工作台</CardDescription>
+      <CardHeader class="text-center">
+        <img :src="logoUrl" alt="轩屿工作台" class="mx-auto h-14 w-auto object-contain" />
       </CardHeader>
       <CardContent>
         <Tabs :model-value="activeTab" default-value="login" @update:model-value="handleTabChange">

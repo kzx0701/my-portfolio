@@ -12,7 +12,7 @@ import {
 import { Badge, Button, Skeleton } from '@/components/ui'
 import { toast } from '@/lib/toast'
 import { WorklogStatsCards } from '@/modules/worklog/components'
-import { formatLongDate, toDateKey } from '@/modules/worklog/date'
+import { formatMonthDay, toDateKey } from '@/modules/worklog/date'
 import { useWorklogStore } from '@/modules/worklog/store'
 import type { WorkLogItem } from '@/modules/worklog/types'
 
@@ -57,7 +57,7 @@ async function complete(item: WorkLogItem) {
 
 function dateLabel(date: string): string {
   if (date === today) return '今天'
-  return formatLongDate(date).replace(String(new Date().getFullYear()) + '年', '')
+  return formatMonthDay(date)
 }
 
 function completedTime(item: WorkLogItem): string {
@@ -114,7 +114,7 @@ function completedTime(item: WorkLogItem): string {
         <div class="flex items-center justify-between border-b px-5 py-4">
           <div>
             <h3 class="text-sm font-semibold">待处理事项</h3>
-            <p class="mt-0.5 text-xs text-muted-foreground">逾期事项优先，其次是今天的安排</p>
+            <p class="mt-0.5 text-xs text-muted-foreground">尚未完成的事项，按安排日期从早到晚</p>
           </div>
           <RouterLink
             to="/worklog/list"
@@ -144,9 +144,11 @@ function completedTime(item: WorkLogItem): string {
             </div>
             <Badge
               variant="outline"
-              :class="item.work_date < today ? 'border-rose-500/25 bg-rose-500/10 text-rose-600 dark:text-rose-400' : 'border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300'"
+              :class="item.work_date === today
+                ? 'border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300'
+                : 'border-border text-muted-foreground'"
             >
-              {{ item.work_date < today ? `逾期 · ${dateLabel(item.work_date)}` : '今天' }}
+              {{ dateLabel(item.work_date) }}
             </Badge>
           </li>
         </ul>

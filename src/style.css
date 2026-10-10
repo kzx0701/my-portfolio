@@ -287,3 +287,25 @@
   max-width: 100%;
   border-radius: var(--radius-md);
 }
+
+/* ---- 工作日志：事项完成时标题划线由左向右生长 ----
+   复刻 uiverse 勾选效果里的划线。用背景渐变而不是 text-decoration：
+   text-decoration 只能整条线瞬间出现/消失，无法表现「生长」过程；
+   背景法只需过渡 background-size，且颜色跟随 currentColor 自动适配明暗色。
+   只作用于工作日志标题（.worklog-strike），不影响其他文本 */
+.worklog-strike {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 55%;
+  background-size: 0% 1.5px;
+  transition: background-size 420ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.worklog-strike[data-struck='true'] {
+  background-size: 100% 1.5px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .worklog-strike {
+    transition: none;
+  }
+}
