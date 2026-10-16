@@ -88,7 +88,10 @@ export interface GoalProgress {
   target: number | null
   /** 已变化量（当前 - 起始，负=减重） */
   changed: number | null
-  /** 进度百分比 0-100（(当前-起始)/(目标-起始)，clamp；无当前记录按起始计 0） */
+  /**
+   * 进度百分比 0-100（(当前-起始)/(目标-起始)，clamp；无当前记录按起始计 0）
+   * 已完成目标恒为 100（达成即满进度，不随之后的实时体重回落）
+   */
   progress: number | null
   /** 距离目标日剩余天数（已过期为负数） */
   daysLeft: number | null
@@ -96,7 +99,7 @@ export interface GoalProgress {
 
 /** 计算单个健康目标的进度（起始基线 → 当前 → 目标 + 差值 + 进度 + 剩余天数） */
 export function calcGoalProgress(
-  goal: Pick<HealthGoal, 'start_weight_kg' | 'target_weight_kg' | 'target_date'>,
+  goal: Pick<HealthGoal, 'start_weight_kg' | 'target_weight_kg' | 'target_date' | 'status'>,
   currentWeight: number | null,
 ): GoalProgress {
   const start = goal.start_weight_kg ?? null
@@ -104,7 +107,10 @@ export function calcGoalProgress(
   const current = currentWeight
   const changed = start !== null && current !== null ? Math.round((current - start) * 10) / 10 : null
   let progress: number | null = null
-  if (start !== null && target !== null && start !== target) {
+  if (goal.status === 'completed') {
+    // 已完成目标：进度锁定 100%，不再按当前体重实时换算（否则体重回弹会让「已完成」显示成 95%）
+    progress = 100
+  } else if (start !== null && target !== null && start !== target) {
     const cur = current ?? start
     progress = Math.min(100, Math.max(0, Math.round(((cur - start) / (target - start)) * 100)))
   }

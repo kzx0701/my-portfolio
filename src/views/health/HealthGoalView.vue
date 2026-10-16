@@ -304,8 +304,8 @@ async function handleDeleteConfirm() {
                 <span v-else class="text-muted-foreground">—</span>
               </TableCell>
               <TableCell>
-                <div v-if="goalProgress(g).start !== null && goalProgress(g).target !== null" class="flex items-center gap-2">
-                  <!-- 渐变进度条：颜色随进度滑动（红→橙→黄→绿），越接近 100% 越绿 -->
+                <div v-if="goalProgress(g).progress !== null" class="flex items-center gap-2">
+                  <!-- 渐变进度条：颜色随进度滑动（红→橙→黄→绿），越接近 100% 越绿；已完成目标恒 100% -->
                   <Progress
                     :model-value="goalProgress(g).progress ?? 0"
                     :indicator-style="goalProgressStyle(goalProgress(g).progress)"
