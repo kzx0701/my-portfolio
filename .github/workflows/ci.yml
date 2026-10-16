@@ -10,9 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # pnpm 版本由 package.json 的 packageManager 字段决定（单一来源，避免本地与 CI 版本漂移）
+      # 注意：action-setup 会把 version 输入与 packageManager 做字符串精确比较，两者并存且不一致会直接失败
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: 22
