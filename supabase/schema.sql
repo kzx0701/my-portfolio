@@ -318,7 +318,7 @@ begin
     where table_schema = 'public' and table_name = 'health_goal'
   ) then
     alter table public.health_goal drop constraint if exists health_goal_pkey;
-    alter table public.health_goal add column id uuid;
+    alter table public.health_goal add column id uuid default gen_random_uuid();
     update public.health_goal set id = gen_random_uuid() where id is null;
     alter table public.health_goal alter column id set not null;
     alter table public.health_goal add constraint health_goal_pkey primary key (id);
@@ -327,6 +327,12 @@ begin
 end $$;
 alter table public.health_goal drop constraint if exists health_goal_status_check;
 alter table public.health_goal add constraint health_goal_status_check check (status in ('in_progress', 'completed', 'cancelled'));
+
+-- ---------- 18.1b id 默认值修补（幂等；修存量库里「迁移路径给 id 加列时漏 default」的缺陷） ----------
+-- 现象：新建目标报 `null value in column "id" of relation "health_goal" violates not-null constraint`
+-- 原因：早期 1:1 → 1:N 迁移用 `add column id uuid`（不带 default），此后前端 insert 不传 id 就无人生成
+-- 说明：与前端约定一致——id 一律由数据库默认值生成（前端各模块 insert 均不传 id），故在此补齐而非改业务代码
+alter table public.health_goal alter column id set default gen_random_uuid();
 
 -- ---------- 18.2 health_goal 索引 ----------
 create index if not exists idx_health_goal_user_id on public.health_goal (user_id);
